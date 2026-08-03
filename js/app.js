@@ -31,6 +31,7 @@ const App = (() => {
     // ── Initialize ──
     function init() {
         Storage.seedDemoData();
+        applyTheme();
 
         // Listen for hash changes
         window.addEventListener('hashchange', _handleRoute);
@@ -151,6 +152,9 @@ const App = (() => {
                         <h2 style="font-size: var(--fs-md); font-weight: 600;">${_getPageTitle()}</h2>
                     </div>
                     <div class="flex items-center gap-sm">
+                        <button class="btn btn-ghost btn-icon" onclick="App.toggleTheme()" data-tooltip="Cambiar tema">
+                            <i data-lucide="${App.getTheme() === 'dark' ? 'sun' : 'moon'}"></i>
+                        </button>
                         <span class="text-secondary hide-mobile" style="font-size: var(--fs-sm);">
                             Hola, ${Security.escapeHTML(user.name.split(' ')[0])}
                         </span>
@@ -497,6 +501,26 @@ const App = (() => {
         _render();
     }
 
+    function getTheme() {
+        return localStorage.getItem('bb_theme') || 'light';
+    }
+
+    function applyTheme() {
+        const theme = getTheme();
+        document.documentElement.setAttribute('data-theme', theme);
+        const metaTheme = document.querySelector('meta[name="theme-color"]');
+        if (metaTheme) metaTheme.setAttribute('content', theme === 'dark' ? '#0A0A0A' : '#F8FAFD');
+    }
+
+    function toggleTheme() {
+        const current = getTheme();
+        const next = current === 'dark' ? 'light' : 'dark';
+        localStorage.setItem('bb_theme', next);
+        applyTheme();
+        showToast('info', 'Tema actualizado', next === 'dark' ? 'Modo oscuro activado' : 'Modo claro activado');
+        _render();
+    }
+
     function _getInitials(name) {
         return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
     }
@@ -509,6 +533,9 @@ const App = (() => {
         refreshNav,
         toggleSidebar,
         toggleUserMenu,
+        getTheme,
+        applyTheme,
+        toggleTheme,
         showModal,
         closeModal,
         showToast

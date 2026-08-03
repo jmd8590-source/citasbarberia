@@ -8,6 +8,9 @@ const Auth = (() => {
     function renderLogin() {
         return `
         <div class="auth-container">
+            <button class="btn btn-ghost btn-icon" onclick="App.toggleTheme()" style="position: absolute; top: var(--space-lg); right: var(--space-lg); z-index: 10;" data-tooltip="Cambiar tema">
+                <i data-lucide="${App.getTheme() === 'dark' ? 'sun' : 'moon'}"></i>
+            </button>
             <div class="auth-card animate-fade-in-up">
                 <div class="auth-header">
                     <div class="auth-logo">Barber<span>Club</span></div>
@@ -58,6 +61,9 @@ const Auth = (() => {
     function renderRegister() {
         return `
         <div class="auth-container">
+            <button class="btn btn-ghost btn-icon" onclick="App.toggleTheme()" style="position: absolute; top: var(--space-lg); right: var(--space-lg); z-index: 10;" data-tooltip="Cambiar tema">
+                <i data-lucide="${App.getTheme() === 'dark' ? 'sun' : 'moon'}"></i>
+            </button>
             <div class="auth-card animate-fade-in-up">
                 <div class="auth-header">
                     <div class="auth-logo">Barber<span>Club</span></div>

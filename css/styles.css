@@ -3,7 +3,7 @@
    ============================================= */
 
 /* ── CSS Variables (Design Tokens) ── */
-:root {
+:root, [data-theme="light"] {
     /* Colors — Light & Bright Premium Theme */
     --bg-primary: #F8FAFD;
     --bg-secondary: #FFFFFF;
@@ -93,6 +93,49 @@
     --z-modal-backdrop: 900;
     --z-modal: 1000;
     --z-toast: 1100;
+}
+
+[data-theme="dark"] {
+    /* Colors — Dark & Gold Premium Theme */
+    --bg-primary: #0A0A0A;
+    --bg-secondary: #111111;
+    --bg-card: #1A1A1A;
+    --bg-card-hover: #222222;
+    --bg-input: #1E1E1E;
+    --bg-elevated: #252525;
+    --border-color: #2A2A2A;
+    --border-light: #333333;
+
+    /* Accent — Gold / Bronze */
+    --accent: #C8956C;
+    --accent-light: #D4A574;
+    --accent-dark: #B07D55;
+    --accent-glow: rgba(200, 149, 108, 0.15);
+    --accent-glow-strong: rgba(200, 149, 108, 0.3);
+    --gold: #D4A574;
+    --gold-dark: #B8860B;
+
+    /* Text */
+    --text-primary: #F5F0EB;
+    --text-secondary: #A89F95;
+    --text-muted: #6B6560;
+    --text-on-accent: #0A0A0A;
+
+    /* Status Colors */
+    --success: #4CAF50;
+    --success-bg: rgba(76, 175, 80, 0.12);
+    --warning: #FF9800;
+    --warning-bg: rgba(255, 152, 0, 0.12);
+    --error: #EF5350;
+    --error-bg: rgba(239, 83, 80, 0.12);
+    --info: #42A5F5;
+    --info-bg: rgba(66, 165, 245, 0.12);
+
+    /* Shadows */
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
+    --shadow-accent: 0 4px 20px rgba(200, 149, 108, 0.2);
 }
 
 /* ── Reset ── */
@@ -243,6 +286,10 @@ h4 { font-size: var(--fs-lg); }
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     background: rgba(255, 255, 255, 0.88);
+}
+
+[data-theme="dark"] .app-topbar {
+    background: rgba(17, 17, 17, 0.85);
 }
 
 .app-content {
@@ -396,6 +443,10 @@ h4 { font-size: var(--fs-lg); }
     border-top: 1px solid var(--border-color);
     z-index: var(--z-nav);
     padding-bottom: env(safe-area-inset-bottom);
+}
+
+[data-theme="dark"] .bottom-nav {
+    background: rgba(17, 17, 17, 0.95);
 }
 
 .bottom-nav-items {
