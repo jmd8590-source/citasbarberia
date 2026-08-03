@@ -1444,3 +1444,27 @@
         text-align: left;
     }
 }
+
+/* ── Printable Marketing Card ── */
+@media print {
+    body * {
+        visibility: hidden;
+    }
+    #printableCardArea, #printableCardArea * {
+        visibility: visible;
+    }
+    #printableCardArea {
+        position: absolute;
+        left: 50%;
+        top: 20%;
+        transform: translateX(-50%);
+        border: 3px solid #D97706 !important;
+        background: #FFFFFF !important;
+        color: #0F172A !important;
+        width: 320px !important;
+        padding: 32px !important;
+        box-shadow: none !important;
+        border-radius: 20px !important;
+        text-align: center !important;
+    }
+}

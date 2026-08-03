@@ -368,6 +368,7 @@ const Admin = (() => {
     // ── Settings ──
     function renderSettings() {
         const settings = Storage.Settings.get();
+        setTimeout(() => Admin.initQRCode(), 50);
 
         return `
         <div class="animate-fade-in-up">
@@ -412,6 +413,39 @@ const Admin = (() => {
                             </button>
                         </div>
                     </form>
+                </div>
+
+                <div class="settings-section">
+                    <div class="card-header" style="margin-bottom: var(--space-xs);">
+                        <h3>Marketing & Código QR</h3>
+                    </div>
+                    <p class="text-secondary" style="font-size: var(--fs-sm); margin-bottom: var(--space-lg);">
+                        Genera el código QR oficial de tu barbería para colocar en el mostrador, espejos de corte o tarjetas de visita.
+                    </p>
+
+                    <div style="display: flex; gap: var(--space-xl); align-items: center; background: var(--bg-secondary); padding: var(--space-lg); border-radius: var(--radius-lg); border: 1px solid var(--border-color); flex-wrap: wrap;">
+                        <div id="qrCanvasContainer" style="background: #FFFFFF; padding: var(--space-md); border-radius: var(--radius-md); border: 1px solid var(--border-color); display: flex; align-items: center; justify-content: center; min-width: 160px; min-height: 160px; margin: 0 auto;">
+                            <!-- QR code rendered here -->
+                        </div>
+                        <div style="flex: 1; min-width: 250px;">
+                            <div class="form-group">
+                                <label class="form-label">Enlace de la app (URL)</label>
+                                <div class="form-input-icon">
+                                    <input type="url" id="qrAppUrl" class="form-input" value="${Security.escapeHTML(window.location.origin + window.location.pathname)}" oninput="Admin.updateQRCode(this.value)">
+                                    <i data-lucide="link"></i>
+                                </div>
+                                <span class="form-hint">URL a la que se dirigirá al cliente al escanear</span>
+                            </div>
+                            <div style="display: flex; gap: var(--space-md); flex-wrap: wrap;">
+                                <button class="btn btn-primary btn-sm" onclick="Admin.downloadQRCode()">
+                                    <i data-lucide="download"></i> Descargar QR (PNG)
+                                </button>
+                                <button class="btn btn-secondary btn-sm" onclick="Admin.printCounterCard()">
+                                    <i data-lucide="printer"></i> Cartel de mostrador
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="settings-section">
@@ -670,6 +704,117 @@ const Admin = (() => {
         return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
     }
 
+    // ── Marketing & QR Code ──
+    function initQRCode() {
+        const container = document.getElementById('qrCanvasContainer');
+        if (!container) return;
+        const urlInput = document.getElementById('qrAppUrl');
+        const targetUrl = urlInput ? urlInput.value : (window.location.origin + window.location.pathname);
+        _renderQR(container, targetUrl);
+    }
+
+    function _renderQR(container, url) {
+        container.innerHTML = '';
+        if (typeof QRCode !== 'undefined') {
+            try {
+                new QRCode(container, {
+                    text: url,
+                    width: 140,
+                    height: 140,
+                    colorDark: "#0F172A",
+                    colorLight: "#FFFFFF",
+                    correctLevel: QRCode.CorrectLevel.H
+                });
+                return;
+            } catch (e) {
+                console.warn('QRCode error, using SVG fallback:', e);
+            }
+        }
+        // Fallback SVG QR generator API
+        const encoded = encodeURIComponent(url);
+        container.innerHTML = `<img id="qrImageFallback" src="https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${encoded}&color=0F172A" alt="Código QR" style="width:140px; height:140px;">`;
+    }
+
+    function updateQRCode(url) {
+        const container = document.getElementById('qrCanvasContainer');
+        if (container) {
+            _renderQR(container, url || (window.location.origin + window.location.pathname));
+        }
+    }
+
+    function downloadQRCode() {
+        const container = document.getElementById('qrCanvasContainer');
+        if (!container) return;
+        const img = container.querySelector('img');
+        const canvas = container.querySelector('canvas');
+
+        let src = '';
+        if (canvas) {
+            src = canvas.toDataURL('image/png');
+        } else if (img) {
+            src = img.src;
+        }
+
+        if (!src) {
+            App.showToast('error', 'Error', 'No se pudo generar la imagen del QR');
+            return;
+        }
+
+        const a = document.createElement('a');
+        a.href = src;
+        a.download = 'barberclub-qr.png';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        App.showToast('success', 'Descargado', 'Código QR guardado en tu dispositivo');
+    }
+
+    function printCounterCard() {
+        const settings = Storage.Settings.get();
+        const urlInput = document.getElementById('qrAppUrl');
+        const targetUrl = urlInput ? urlInput.value : (window.location.origin + window.location.pathname);
+        const container = document.getElementById('qrCanvasContainer');
+        const img = container ? container.querySelector('img') : null;
+        const canvas = container ? container.querySelector('canvas') : null;
+        const qrSrc = canvas ? canvas.toDataURL('image/png') : (img ? img.src : '');
+
+        App.showModal(`
+            <div class="modal-header">
+                <h3 class="modal-title">Cartel de mostrador (Vista previa)</h3>
+                <button class="modal-close" onclick="App.closeModal()">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <div class="modal-body" style="text-align: center; padding: var(--space-xl);">
+                <div class="printable-card" id="printableCardArea" style="border: 2px solid var(--accent); border-radius: var(--radius-xl); padding: var(--space-2xl); background: var(--bg-secondary); max-width: 340px; margin: 0 auto; box-shadow: var(--shadow-lg);">
+                    <div style="font-family: var(--font-heading); font-size: var(--fs-2xl); font-weight: 800; color: var(--accent); margin-bottom: 4px;">
+                        ${Security.escapeHTML(settings.shopName || 'BarberClub')}
+                    </div>
+                    <p style="font-size: var(--fs-xs); color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: var(--space-xl);">
+                        Reserva de Citas Online
+                    </p>
+                    <div style="background: #FFFFFF; padding: var(--space-md); border-radius: var(--radius-lg); display: inline-block; box-shadow: var(--shadow-md); margin-bottom: var(--space-lg);">
+                        <img src="${qrSrc}" alt="QR" style="width: 160px; height: 160px; display: block; margin: 0 auto;">
+                    </div>
+                    <h4 style="font-size: var(--fs-md); margin-bottom: var(--space-xs);">¡Escanea con tu móvil!</h4>
+                    <p style="font-size: var(--fs-xs); color: var(--text-secondary); margin-bottom: var(--space-md);">
+                        Elige tu servicio, fecha y hora en 30 segundos sin esperar llamadas.
+                    </p>
+                    <div style="font-size: 10px; color: var(--text-muted); word-break: break-all;">
+                        ${Security.escapeHTML(targetUrl)}
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" style="justify-content: center;">
+                <button class="btn btn-secondary" onclick="App.closeModal()">Cerrar</button>
+                <button class="btn btn-primary" onclick="window.print()">
+                    <i data-lucide="printer"></i> Imprimir cartel
+                </button>
+            </div>
+        `);
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+    }
+
     // ── Public API ──
     return {
         renderDashboard,
@@ -689,6 +834,10 @@ const Admin = (() => {
         saveSettings,
         resetAllData,
         confirmReset,
+        initQRCode,
+        updateQRCode,
+        downloadQRCode,
+        printCounterCard,
         _searchTimeout: null
     };
 })();
