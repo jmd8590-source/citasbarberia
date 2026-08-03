@@ -110,18 +110,28 @@ const Auth = (() => {
     }
 
     // ── Handle Login ──
-    function handleLogin(e) {
+    async function handleLogin(e) {
         e.preventDefault();
-        const email = document.getElementById('loginEmail').value.trim();
-        const password = document.getElementById('loginPassword').value;
+        const emailInput = document.getElementById('loginEmail').value.trim();
+        const passwordInput = document.getElementById('loginPassword').value;
 
-        const user = Storage.Users.getByEmail(email);
-        if (!user) {
-            App.showToast('error', 'Error', 'No se encontró una cuenta con ese email');
+        if (!Security.validateEmail(emailInput)) {
+            App.showToast('error', 'Error', 'El formato del email no es válido');
             return;
         }
-        if (user.password !== password) {
-            App.showToast('error', 'Error', 'Contraseña incorrecta');
+
+        const user = Storage.Users.getByEmail(emailInput);
+        if (!user) {
+            App.showToast('error', 'Error', 'Credenciales incorrectas');
+            return;
+        }
+
+        const inputHash = await Security.hashPassword(passwordInput);
+        const syncHash = Security.hashPasswordSync(passwordInput);
+
+        // Support both hashed and legacy string comparison
+        if (user.password !== inputHash && user.password !== syncHash && user.password !== passwordInput) {
+            App.showToast('error', 'Error', 'Credenciales incorrectas');
             return;
         }
 
@@ -129,12 +139,27 @@ const Auth = (() => {
     }
 
     // ── Handle Register ──
-    function handleRegister(e) {
+    async function handleRegister(e) {
         e.preventDefault();
-        const name = document.getElementById('registerName').value.trim();
-        const email = document.getElementById('registerEmail').value.trim();
-        const phone = document.getElementById('registerPhone').value.trim();
+        const name = Security.sanitizeString(document.getElementById('registerName').value, 100);
+        const email = document.getElementById('registerEmail').value.trim().toLowerCase();
+        const phone = Security.sanitizeString(document.getElementById('registerPhone').value, 20);
         const password = document.getElementById('registerPassword').value;
+
+        if (!name || name.length < 2) {
+            App.showToast('error', 'Error', 'Introduce un nombre válido');
+            return;
+        }
+
+        if (!Security.validateEmail(email)) {
+            App.showToast('error', 'Error', 'El formato del email no es válido');
+            return;
+        }
+
+        if (phone && !Security.validatePhone(phone)) {
+            App.showToast('error', 'Error', 'El formato del teléfono no es válido');
+            return;
+        }
 
         if (password.length < 6) {
             App.showToast('error', 'Error', 'La contraseña debe tener al menos 6 caracteres');
@@ -143,7 +168,7 @@ const Auth = (() => {
 
         const existing = Storage.Users.getByEmail(email);
         if (existing) {
-            App.showToast('error', 'Error', 'Ya existe una cuenta con ese email');
+            App.showToast('error', 'Error', 'Ya existe una cuenta registrada con ese email');
             return;
         }
 
@@ -151,8 +176,8 @@ const Auth = (() => {
             name,
             email,
             phone,
-            password,
-            role: 'client',
+            password, // Storage.Users.create automatically hashes it
+            role: 'client', // Strictly client role
             avatar: ''
         });
 

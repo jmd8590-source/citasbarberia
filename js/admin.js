@@ -220,8 +220,8 @@ const Admin = (() => {
                                 <div class="agenda-slot-time">${slot.time}</div>
                                 <div class="agenda-slot-content" onclick="Admin.viewAppointment('${slot.appointment.id}')">
                                     <div class="agenda-slot-appointment">
-                                        <h4>${user ? user.name : 'Cliente'}</h4>
-                                        <p>${svc ? `${svc.name} · ${svc.duration} min` : ''}</p>
+                                        <h4>${user ? Security.escapeHTML(user.name) : 'Cliente'}</h4>
+                                        <p>${svc ? `${Security.escapeHTML(svc.name)} · ${svc.duration} min` : ''}</p>
                                     </div>
                                 </div>
                             </div>`;
@@ -346,11 +346,11 @@ const Admin = (() => {
                         return `
                         <div class="client-list-item" onclick="Admin.viewClient('${client.id}')">
                             <div class="avatar">
-                                ${client.avatar ? `<img src="${client.avatar}" alt="">` : _getInitials(client.name)}
+                                ${client.avatar ? `<img src="${Security.escapeHTML(client.avatar)}" alt="">` : _getInitials(client.name)}
                             </div>
                             <div class="client-info">
-                                <h4>${client.name}</h4>
-                                <p>${client.email} ${client.phone ? `· ${client.phone}` : ''}</p>
+                                <h4>${Security.escapeHTML(client.name)}</h4>
+                                <p>${Security.escapeHTML(client.email)} ${client.phone ? `· ${Security.escapeHTML(client.phone)}` : ''}</p>
                             </div>
                             <div class="client-meta">
                                 <div class="visits">${completed} visita${completed !== 1 ? 's' : ''}</div>
@@ -608,12 +608,12 @@ const Admin = (() => {
     function saveSettings(e) {
         e.preventDefault();
         Storage.Settings.update({
-            shopName: document.getElementById('setShopName').value.trim(),
-            address: document.getElementById('setAddress').value.trim(),
-            phone: document.getElementById('setPhone').value.trim(),
-            email: document.getElementById('setEmail').value.trim(),
-            instagram: document.getElementById('setInstagram').value.trim(),
-            description: document.getElementById('setDescription').value.trim()
+            shopName: Security.sanitizeString(document.getElementById('setShopName').value, 100),
+            address: Security.sanitizeString(document.getElementById('setAddress').value, 200),
+            phone: Security.sanitizeString(document.getElementById('setPhone').value, 30),
+            email: Security.sanitizeString(document.getElementById('setEmail').value, 100),
+            instagram: Security.sanitizeString(document.getElementById('setInstagram').value, 100),
+            description: Security.sanitizeString(document.getElementById('setDescription').value, 500)
         });
         App.showToast('success', 'Guardado', 'Los ajustes han sido actualizados');
     }

@@ -82,8 +82,8 @@ const Booking = (() => {
                             <i data-lucide="${iconMap[service.icon] || 'scissors'}"></i>
                         </div>
                         <div class="service-info">
-                            <div class="service-name">${service.name}</div>
-                            <div class="service-description">${service.description}</div>
+                            <div class="service-name">${Security.escapeHTML(service.name)}</div>
+                            <div class="service-description">${Security.escapeHTML(service.description)}</div>
                             <div class="service-meta">
                                 <span><i data-lucide="clock"></i> ${service.duration} min</span>
                             </div>
@@ -296,7 +296,7 @@ const Booking = (() => {
             <div class="booking-summary">
                 <div class="booking-summary-row">
                     <span class="booking-summary-label">Servicio</span>
-                    <span class="booking-summary-value">${service.name}</span>
+                    <span class="booking-summary-value">${Security.escapeHTML(service.name)}</span>
                 </div>
                 <div class="booking-summary-row">
                     <span class="booking-summary-label">Duración</span>

@@ -50,11 +50,11 @@ const ServicesAdmin = (() => {
         return `
         <div class="service-admin-card ${!service.active ? 'inactive' : ''}">
             <div class="service-icon">
-                <i data-lucide="${service.icon || 'scissors'}"></i>
+                <i data-lucide="${Security.escapeHTML(service.icon || 'scissors')}"></i>
             </div>
             <div class="service-admin-info">
-                <h4>${service.name} ${!service.active ? '<span class="badge badge-neutral">Inactivo</span>' : ''}</h4>
-                <p>${service.description || 'Sin descripción'}</p>
+                <h4>${Security.escapeHTML(service.name)} ${!service.active ? '<span class="badge badge-neutral">Inactivo</span>' : ''}</h4>
+                <p>${Security.escapeHTML(service.description || 'Sin descripción')}</p>
                 <div class="service-admin-meta">
                     <span class="badge badge-accent">
                         <i data-lucide="clock" style="width:12px;height:12px"></i>
@@ -152,11 +152,11 @@ const ServicesAdmin = (() => {
     function saveService(e, serviceId) {
         e.preventDefault();
         const data = {
-            name: document.getElementById('svcName').value.trim(),
-            description: document.getElementById('svcDescription').value.trim(),
-            duration: parseInt(document.getElementById('svcDuration').value),
-            price: parseFloat(document.getElementById('svcPrice').value),
-            icon: document.getElementById('svcIcon').value
+            name: Security.sanitizeString(document.getElementById('svcName').value, 100),
+            description: Security.sanitizeString(document.getElementById('svcDescription').value, 300),
+            duration: Math.max(5, Math.min(240, parseInt(document.getElementById('svcDuration').value) || 30)),
+            price: Math.max(0, parseFloat(document.getElementById('svcPrice').value) || 0),
+            icon: Security.sanitizeString(document.getElementById('svcIcon').value, 50)
         };
 
         if (serviceId) {

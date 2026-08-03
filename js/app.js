@@ -132,7 +132,7 @@ const App = (() => {
                             ${user.avatar ? `<img src="${user.avatar}" alt="">` : _getInitials(user.name)}
                         </div>
                         <div class="sidebar-user-info">
-                            <div class="sidebar-user-name">${user.name}</div>
+                            <div class="sidebar-user-name">${Security.escapeHTML(user.name)}</div>
                             <div class="sidebar-user-role">${isAdmin ? 'Administrador' : 'Cliente'}</div>
                         </div>
                         <i data-lucide="log-out" style="width:18px; height:18px; color: var(--text-muted); cursor: pointer;" onclick="event.stopPropagation(); Auth.logout();"></i>
@@ -152,10 +152,10 @@ const App = (() => {
                     </div>
                     <div class="flex items-center gap-sm">
                         <span class="text-secondary hide-mobile" style="font-size: var(--fs-sm);">
-                            Hola, ${user.name.split(' ')[0]}
+                            Hola, ${Security.escapeHTML(user.name.split(' ')[0])}
                         </span>
-                        <div class="avatar avatar-sm" style="cursor: pointer;" onclick="${isAdmin ? '' : "App.navigate('profile')"}">
-                            ${user.avatar ? `<img src="${user.avatar}" alt="">` : _getInitials(user.name)}
+                        <div class="avatar avatar-sm" style="cursor: pointer;" onclick="${isAdmin ? '' : "App.navigate('profile')" }">
+                            ${user.avatar ? `<img src="${Security.escapeHTML(user.avatar)}" alt="">` : _getInitials(user.name)}
                         </div>
                     </div>
                 </header>
@@ -267,9 +267,9 @@ const App = (() => {
         <div>
             <!-- Hero -->
             <div class="home-hero animate-fade-in-up">
-                <p class="home-greeting">Bienvenido, <strong>${user.name.split(' ')[0]}</strong></p>
-                <h1>${settings.shopName || 'BarberClub'}</h1>
-                <p>${settings.description || 'Tu barbería de confianza'}</p>
+                <p class="home-greeting">Bienvenido, <strong>${Security.escapeHTML(user.name.split(' ')[0])}</strong></p>
+                <h1>${Security.escapeHTML(settings.shopName || 'BarberClub')}</h1>
+                <p>${Security.escapeHTML(settings.description || 'Tu barbería de confianza')}</p>
                 <button class="btn btn-primary btn-xl" onclick="App.navigate('booking')">
                     <i data-lucide="scissors"></i>
                     Reservar cita ahora

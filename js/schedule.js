@@ -115,7 +115,7 @@ const Schedule = (() => {
                                     <div class="block-item">
                                         <div class="block-item-info">
                                             <span class="block-item-date">${_formatDate(vac.startDate)} — ${_formatDate(vac.endDate)}</span>
-                                            ${vac.reason ? `<span class="block-item-reason">— ${vac.reason}</span>` : ''}
+                                            ${vac.reason ? `<span class="block-item-reason">— ${Security.escapeHTML(vac.reason)}</span>` : ''}
                                         </div>
                                         <button class="btn btn-ghost btn-sm" onclick="Schedule.removeVacation('${vac.id}')">
                                             <i data-lucide="x"></i>
@@ -193,7 +193,12 @@ const Schedule = (() => {
     function saveBlock(e) {
         e.preventDefault();
         const date = document.getElementById('blockDate').value;
-        const reason = document.getElementById('blockReason').value.trim();
+        const reason = Security.sanitizeString(document.getElementById('blockReason').value, 150);
+
+        if (!Security.validateDate(date)) {
+            App.showToast('error', 'Error', 'Fecha no válida');
+            return;
+        }
 
         Storage.addBlock({ date, reason });
         App.closeModal();
@@ -247,7 +252,7 @@ const Schedule = (() => {
         e.preventDefault();
         const startDate = document.getElementById('vacStart').value;
         const endDate = document.getElementById('vacEnd').value;
-        const reason = document.getElementById('vacReason').value.trim();
+        const reason = Security.sanitizeString(document.getElementById('vacReason').value, 150);
 
         if (endDate < startDate) {
             App.showToast('error', 'Error', 'La fecha de fin debe ser posterior a la de inicio');

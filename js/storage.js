@@ -36,7 +36,7 @@ const Storage = (() => {
     }
 
     function _generateId() {
-        return Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
+        return typeof Security !== 'undefined' ? Security.generateSecureId() : Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
     }
 
     // ── Generic CRUD ──
@@ -82,9 +82,32 @@ const Storage = (() => {
     const Users = {
         getAll: () => getAll(KEYS.USERS),
         getById: (id) => getById(KEYS.USERS, id),
-        getByEmail: (email) => getAll(KEYS.USERS).find(u => u.email.toLowerCase() === email.toLowerCase()),
-        create: (user) => create(KEYS.USERS, user),
-        update: (id, data) => update(KEYS.USERS, id, data),
+        getByEmail: (email) => {
+            if (!email) return null;
+            const cleanEmail = email.trim().toLowerCase();
+            return getAll(KEYS.USERS).find(u => u.email.toLowerCase() === cleanEmail);
+        },
+        create: (user) => {
+            const cleanUser = {
+                ...user,
+                name: Security.sanitizeString(user.name),
+                email: Security.sanitizeString(user.email).toLowerCase(),
+                phone: Security.sanitizeString(user.phone || ''),
+                password: Security.hashPasswordSync(user.password),
+                role: user.role === 'admin' ? 'admin' : 'client'
+            };
+            return create(KEYS.USERS, cleanUser);
+        },
+        update: (id, data) => {
+            const updates = { ...data };
+            if (updates.name) updates.name = Security.sanitizeString(updates.name);
+            if (updates.email) updates.email = Security.sanitizeString(updates.email).toLowerCase();
+            if (updates.phone) updates.phone = Security.sanitizeString(updates.phone);
+            if (updates.password) updates.password = Security.hashPasswordSync(updates.password);
+            // Prevent unauthorized role modification unless explicitly admin
+            delete updates.role;
+            return update(KEYS.USERS, id, updates);
+        },
         remove: (id) => remove(KEYS.USERS, id),
         getClients: () => query(KEYS.USERS, u => u.role === 'client')
     };
@@ -323,7 +346,7 @@ const Storage = (() => {
             name: 'Carlos Martínez',
             email: 'admin@barberia.com',
             phone: '+34 600 000 001',
-            password: 'admin123',
+            password: Security.hashPasswordSync('admin123'),
             role: 'admin',
             avatar: '',
             createdAt: '2026-01-15T10:00:00Z'
@@ -335,7 +358,7 @@ const Storage = (() => {
             name: 'Alejandro García',
             email: 'alex@email.com',
             phone: '+34 611 111 111',
-            password: '123456',
+            password: Security.hashPasswordSync('123456'),
             role: 'client',
             avatar: '',
             createdAt: '2026-03-10T14:30:00Z'
@@ -346,7 +369,7 @@ const Storage = (() => {
             name: 'Daniel López',
             email: 'daniel@email.com',
             phone: '+34 622 222 222',
-            password: '123456',
+            password: Security.hashPasswordSync('123456'),
             role: 'client',
             avatar: '',
             createdAt: '2026-04-05T09:15:00Z'
@@ -357,7 +380,7 @@ const Storage = (() => {
             name: 'Miguel Fernández',
             email: 'miguel@email.com',
             phone: '+34 633 333 333',
-            password: '123456',
+            password: Security.hashPasswordSync('123456'),
             role: 'client',
             avatar: '',
             createdAt: '2026-05-20T11:00:00Z'

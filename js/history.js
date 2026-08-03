@@ -91,7 +91,7 @@ const History = (() => {
                 <div class="month">${monthNames[dateObj.getMonth()]}</div>
             </div>
             <div class="history-card-info">
-                <h4>${service ? service.name : 'Servicio'}</h4>
+                <h4>${service ? Security.escapeHTML(service.name) : 'Servicio'}</h4>
                 <p>${dayNames[dateObj.getDay()]} a las ${appt.time} h ${service ? `· ${service.duration} min` : ''}</p>
                 <div style="margin-top: var(--space-xs);">
                     ${statusBadge[appt.status] || ''}
@@ -145,6 +145,16 @@ const History = (() => {
     }
 
     function confirmCancel(apptId) {
+        const user = Storage.Session.getCurrentUser();
+        const appt = Storage.Appointments.getById(apptId);
+
+        // Security check: ensure user owns the appointment or is admin
+        if (!appt || (appt.userId !== user.id && !Storage.Session.isAdmin())) {
+            App.showToast('error', 'Error', 'No tienes autorización para cancelar esta cita');
+            App.closeModal();
+            return;
+        }
+
         Storage.Appointments.cancel(apptId);
         App.closeModal();
         App.showToast('info', 'Cita cancelada', 'Tu cita ha sido cancelada correctamente');

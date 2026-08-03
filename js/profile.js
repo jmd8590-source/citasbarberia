@@ -35,9 +35,9 @@ const Profile = (() => {
                     <input type="file" id="avatarUpload" accept="image/*" style="display:none" onchange="Profile.uploadAvatar(event)">
                 </div>
                 <div class="profile-info">
-                    <h2>${user.name}</h2>
-                    <p>${user.email}</p>
-                    ${user.phone ? `<p>${user.phone}</p>` : ''}
+                    <h2>${Security.escapeHTML(user.name)}</h2>
+                    <p>${Security.escapeHTML(user.email)}</p>
+                    ${user.phone ? `<p>${Security.escapeHTML(user.phone)}</p>` : ''}
                 </div>
                 <div class="profile-stats">
                     <div class="profile-stat">
@@ -130,9 +130,9 @@ const Profile = (() => {
                 </label>
                 ${gallery.map(item => `
                     <div class="gallery-item" onclick="Profile.viewGalleryItem('${item.id}')">
-                        <img src="${item.imageData}" alt="${item.caption || 'Foto'}">
+                        <img src="${item.imageData}" alt="${Security.escapeHTML(item.caption || 'Foto')}">
                         <div class="gallery-item-overlay">
-                            <span class="gallery-item-caption">${item.caption || ''}</span>
+                            <span class="gallery-item-caption">${Security.escapeHTML(item.caption || '')}</span>
                         </div>
                     </div>
                 `).join('')}
@@ -162,10 +162,25 @@ const Profile = (() => {
     function saveProfile(e) {
         e.preventDefault();
         const user = Storage.Session.getCurrentUser();
-        const name = document.getElementById('profileName').value.trim();
-        const email = document.getElementById('profileEmail').value.trim();
-        const phone = document.getElementById('profilePhone').value.trim();
+        const name = Security.sanitizeString(document.getElementById('profileName').value, 100);
+        const email = document.getElementById('profileEmail').value.trim().toLowerCase();
+        const phone = Security.sanitizeString(document.getElementById('profilePhone').value, 20);
         const password = document.getElementById('profilePassword').value;
+
+        if (!name || name.length < 2) {
+            App.showToast('error', 'Error', 'Introduce un nombre válido');
+            return;
+        }
+
+        if (!Security.validateEmail(email)) {
+            App.showToast('error', 'Error', 'El formato del email no es válido');
+            return;
+        }
+
+        if (phone && !Security.validatePhone(phone)) {
+            App.showToast('error', 'Error', 'El formato del teléfono no es válido');
+            return;
+        }
 
         // Check email uniqueness
         const existing = Storage.Users.getByEmail(email);
@@ -213,7 +228,8 @@ const Profile = (() => {
             return;
         }
 
-        const caption = prompt('Añade una descripción (opcional):') || '';
+        const rawCaption = prompt('Añade una descripción (opcional):') || '';
+        const caption = Security.sanitizeString(rawCaption, 100);
 
         const reader = new FileReader();
         reader.onload = (ev) => {
@@ -236,13 +252,13 @@ const Profile = (() => {
 
         App.showModal(`
             <div class="modal-header">
-                <h3 class="modal-title">${item.caption || 'Foto de referencia'}</h3>
+                <h3 class="modal-title">${Security.escapeHTML(item.caption || 'Foto de referencia')}</h3>
                 <button class="modal-close" onclick="App.closeModal()">
                     <i data-lucide="x"></i>
                 </button>
             </div>
             <div class="modal-body" style="padding:0;">
-                <img src="${item.imageData}" alt="${item.caption}" style="width:100%; border-radius: 0 0 var(--radius-lg) var(--radius-lg);">
+                <img src="${item.imageData}" alt="${Security.escapeHTML(item.caption || '')}" style="width:100%; border-radius: 0 0 var(--radius-lg) var(--radius-lg);">
             </div>
             <div class="modal-footer">
                 <button class="btn btn-danger btn-sm" onclick="Profile.deleteGalleryItem('${item.id}')">
