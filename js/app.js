@@ -173,13 +173,17 @@ const App = (() => {
             <!-- Bottom Nav (Mobile) -->
             <nav class="bottom-nav">
                 <div class="bottom-nav-items">
-                    ${(isAdmin ? adminNav.slice(0, 5) : clientNav).map(item => `
+                    ${(isAdmin ? adminNav.slice(0, 4) : clientNav.slice(0, 4)).map(item => `
                         <div class="bottom-nav-item ${currentRoute === item.route ? 'active' : ''}"
                              onclick="App.navigate('${item.route}')">
                             <i data-lucide="${item.icon}"></i>
                             <span>${item.label}</span>
                         </div>
                     `).join('')}
+                    <div class="bottom-nav-item bottom-nav-logout" onclick="Auth.logout()">
+                        <i data-lucide="log-out"></i>
+                        <span>Salir</span>
+                    </div>
                 </div>
             </nav>
         </div>

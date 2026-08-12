@@ -494,6 +494,16 @@ h4 { font-size: var(--fs-lg); }
     height: 22px;
 }
 
+.bottom-nav-logout {
+    color: var(--error) !important;
+    opacity: 0.85;
+}
+
+.bottom-nav-logout:hover {
+    color: var(--error) !important;
+    opacity: 1;
+}
+
 /* ── Page Header ── */
 .page-header {
     margin-bottom: var(--space-xl);
