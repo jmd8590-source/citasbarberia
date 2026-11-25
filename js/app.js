@@ -127,6 +127,7 @@ export const App = (() => {
         const nav = isAdmin ? _adminNav() : _clientNav();
 
         return `
+        <a href="#main-content" class="skip-link">${t('Saltar al contenido')}</a>
         <div class="app-layout">
             <!-- Sidebar (Desktop) -->
             <aside class="app-sidebar" id="sidebar">
@@ -188,7 +189,7 @@ export const App = (() => {
                 </header>
 
                 <!-- Page Content -->
-                <div class="app-content">
+                <div class="app-content" id="main-content" tabindex="-1">
                     ${_renderPageContent()}
                 </div>
             </main>
@@ -456,6 +457,9 @@ export const App = (() => {
         // Simple toggle — could be extended with dropdown
     }
 
+    let _modalKeydownHandler = null;
+    let _modalLastFocused = null;
+
     function showModal(content) {
         const container = document.getElementById('modalContainer');
         if (!container) {
@@ -467,19 +471,50 @@ export const App = (() => {
 
         document.getElementById('modalContainer').innerHTML = `
             <div class="modal-overlay" onclick="App.closeModal(event)">
-                <div class="modal" role="dialog" aria-modal="true" onclick="event.stopPropagation()">
+                <div class="modal" role="dialog" aria-modal="true" tabindex="-1" onclick="event.stopPropagation()">
                     ${content}
                 </div>
             </div>
         `;
 
         renderIcons();
+
+        _modalLastFocused = document.activeElement;
+        const modalEl = document.querySelector('#modalContainer .modal');
+        if (modalEl) modalEl.focus();
+
+        _modalKeydownHandler = (e) => {
+            if (e.key === 'Escape') {
+                closeModal();
+                return;
+            }
+            if (e.key !== 'Tab' || !modalEl) return;
+            const focusable = modalEl.querySelectorAll('a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])');
+            if (focusable.length === 0) return;
+            const first = focusable[0];
+            const last = focusable[focusable.length - 1];
+            if (e.shiftKey && document.activeElement === first) {
+                e.preventDefault();
+                last.focus();
+            } else if (!e.shiftKey && document.activeElement === last) {
+                e.preventDefault();
+                first.focus();
+            }
+        };
+        document.addEventListener('keydown', _modalKeydownHandler);
     }
 
     function closeModal(event) {
         if (event && event.target && !event.target.classList.contains('modal-overlay')) return;
         const container = document.getElementById('modalContainer');
         if (container) container.innerHTML = '';
+        if (_modalKeydownHandler) {
+            document.removeEventListener('keydown', _modalKeydownHandler);
+            _modalKeydownHandler = null;
+        }
+        if (_modalLastFocused && typeof _modalLastFocused.focus === 'function') {
+            _modalLastFocused.focus();
+        }
     }
 
     function showToast(type, title, message) {

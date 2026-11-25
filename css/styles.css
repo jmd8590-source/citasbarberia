@@ -26,7 +26,7 @@
     /* Text — Warm near-black, high contrast on pearl */
     --text-primary: #18160F;
     --text-secondary: #5C5547;
-    --text-muted: #847C6C;
+    --text-muted: #746C5C;
     --text-on-accent: #FFFFFF;
 
     /* Status Colors */
@@ -118,7 +118,7 @@
     /* Text — Warm pearl on near-black */
     --text-primary: #F5F1E8;
     --text-secondary: #B8B2A6;
-    --text-muted: #7A7468;
+    --text-muted: #8F8A7D;
     --text-on-accent: #15130F;
 
     /* Status Colors */
@@ -236,6 +236,58 @@ h4 { font-size: var(--fs-lg); }
 ::selection {
     background: var(--accent);
     color: var(--text-on-accent);
+}
+
+/* ── Accessibility: focus visibility ── */
+a, button, input, select, textarea, [tabindex] {
+    outline-offset: 2px;
+}
+
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+/* ── Accessibility: skip link ── */
+.skip-link {
+    position: fixed;
+    top: -100px;
+    left: var(--space-md);
+    z-index: 2000;
+    background: var(--accent);
+    color: var(--text-on-accent);
+    padding: var(--space-sm) var(--space-lg);
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    font-size: var(--fs-sm);
+    transition: top var(--transition-fast);
+}
+
+.skip-link:focus {
+    top: var(--space-md);
+}
+
+/* ── Accessibility: respect reduced-motion preference ── */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.001ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+/* ── Accessibility: comfortable touch targets on handheld devices ── */
+@media (pointer: coarse) {
+    .btn-icon, .bottom-nav-item, .sidebar-nav-item, .tab {
+        min-height: 44px;
+        min-width: 44px;
+    }
 }
 
 /* ── App Layout ── */

@@ -32,6 +32,7 @@ const en = {
     'Caballeros': 'Men',
     'Señoras': 'Women',
     'Cerrar': 'Close',
+    'Saltar al contenido': 'Skip to content',
     'Cancelar': 'Cancel',
     'Guardar': 'Save',
     'Guardar cambios': 'Save changes',
