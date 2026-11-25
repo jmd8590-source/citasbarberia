@@ -16,6 +16,7 @@ import { Admin } from './admin.js';
 import { t, getLang, setLang } from './i18n.js';
 import { LegalPages } from './legal.js';
 import { Consent } from './consent.js';
+import { Pwa } from './pwa.js';
 
 export const App = (() => {
     let currentRoute = '';
@@ -63,6 +64,9 @@ export const App = (() => {
 
         // Cookie / local-storage consent notice (first visit only)
         Consent.initConsentBanner(renderIcons);
+
+        // Re-render when install-ability changes so the "Install app" button can appear/disappear
+        Pwa.initPwaInstall(() => _render());
     }
 
     // ── Router ──
@@ -176,6 +180,10 @@ export const App = (() => {
                         <h2 style="font-size: var(--fs-md); font-weight: 600;">${_getPageTitle()}</h2>
                     </div>
                     <div class="flex items-center gap-sm">
+                        ${(Pwa.canInstall() || Pwa.canShowIOSHint()) ? `
+                        <button class="btn btn-ghost btn-icon tooltip-below" onclick="App.installApp()" data-tooltip="${t('Instalar app')}">
+                            <i data-lucide="download-cloud"></i>
+                        </button>` : ''}
                         ${!isAdmin ? `
                         <button class="btn btn-ghost btn-icon tooltip-below" onclick="App.toggleCatalogMode()" data-tooltip="${getCatalogMode() === 'women' ? t('Ver catálogo Caballeros') : t('Ver catálogo Señoras')}">
                             <i data-lucide="${getCatalogMode() === 'women' ? 'venus' : 'mars'}"></i>
@@ -617,12 +625,24 @@ export const App = (() => {
         _render();
     }
 
+    // ── PWA install ──
+    async function installApp() {
+        if (Pwa.canInstall()) {
+            await Pwa.promptInstall();
+            return;
+        }
+        if (Pwa.canShowIOSHint()) {
+            showToast('info', t('Instalar app'), t('Toca el botón Compartir de Safari y luego "Añadir a pantalla de inicio".'));
+        }
+    }
+
     // ── Public API ──
     return {
         init,
         navigate,
         renderPage,
         refreshNav,
+        installApp,
         toggleSidebar,
         toggleUserMenu,
         getTheme,

@@ -365,6 +365,10 @@ const en = {
     'Mostrando servicios para señoras': "Showing women's services",
     'Mostrando servicios para caballeros': "Showing men's services",
 
+    'Instalar app': 'Install app',
+    'Toca el botón Compartir de Safari y luego "Añadir a pantalla de inicio".':
+        'Tap the Share button in Safari, then "Add to Home Screen".',
+
     // ── Loading ──
     'Cargando BarberClub...': 'Loading BarberClub...',
 
