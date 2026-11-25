@@ -69,22 +69,31 @@ export const Booking = (() => {
 
     // ── Step 1: Select Service ──
     function _renderStep1() {
-        const services = Storage.Services.getActive();
-        const iconMap = {
-            'scissors': 'scissors',
-            'pen-tool': 'pen-tool',
-            'star': 'star'
-        };
+        const catalogMode = App.getCatalogMode();
+        const services = Storage.Services.getActive(catalogMode);
 
         return `
         <div class="booking-step">
-            <h3 style="margin-bottom: var(--space-lg);">¿Qué servicio necesitas?</h3>
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom: var(--space-lg); flex-wrap:wrap; gap: var(--space-sm);">
+                <h3 style="margin:0;">¿Qué servicio necesitas?</h3>
+                <span class="badge badge-accent">
+                    <i data-lucide="${catalogMode === 'women' ? 'venus' : 'mars'}" style="width:12px;height:12px;"></i>
+                    ${catalogMode === 'women' ? 'Señoras' : 'Caballeros'}
+                </span>
+            </div>
+            ${services.length === 0 ? `
+                <div class="empty-state">
+                    <i data-lucide="scissors"></i>
+                    <h3>Sin servicios disponibles</h3>
+                    <p>Todavía no hay servicios activos en este catálogo</p>
+                </div>
+            ` : `
             <div class="service-grid">
                 ${services.map(service => `
                     <div class="service-card ${state.selectedService === service.id ? 'selected' : ''}"
                          onclick="Booking.selectService('${service.id}')">
                         <div class="service-icon">
-                            <i data-lucide="${iconMap[service.icon] || 'scissors'}"></i>
+                            <i data-lucide="${Security.escapeHTML(service.icon || 'scissors')}"></i>
                         </div>
                         <div class="service-info">
                             <div class="service-name">${Security.escapeHTML(service.name)}</div>
@@ -104,6 +113,7 @@ export const Booking = (() => {
                     <i data-lucide="arrow-right"></i>
                 </button>
             </div>
+            `}
         </div>
         `;
     }

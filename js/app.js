@@ -162,6 +162,10 @@ export const App = (() => {
                         <h2 style="font-size: var(--fs-md); font-weight: 600;">${_getPageTitle()}</h2>
                     </div>
                     <div class="flex items-center gap-sm">
+                        ${!isAdmin ? `
+                        <button class="btn btn-ghost btn-icon tooltip-below" onclick="App.toggleCatalogMode()" data-tooltip="${getCatalogMode() === 'women' ? 'Ver catálogo Caballeros' : 'Ver catálogo Señoras'}">
+                            <i data-lucide="${getCatalogMode() === 'women' ? 'venus' : 'mars'}"></i>
+                        </button>` : ''}
                         <button class="btn btn-ghost btn-icon tooltip-below" onclick="App.toggleTheme()" data-tooltip="Cambiar tema">
                             <i data-lucide="${App.getTheme() === 'dark' ? 'sun' : 'moon'}"></i>
                         </button>
@@ -539,6 +543,19 @@ export const App = (() => {
         return Security.escapeHTML(name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase());
     }
 
+    // ── Catalog Mode (Caballeros / Señoras) ──
+    function getCatalogMode() {
+        return localStorage.getItem('bb_catalog_mode') || 'men';
+    }
+
+    function toggleCatalogMode() {
+        const next = getCatalogMode() === 'men' ? 'women' : 'men';
+        localStorage.setItem('bb_catalog_mode', next);
+        showToast('info', next === 'women' ? 'Catálogo: Señoras' : 'Catálogo: Caballeros',
+            next === 'women' ? 'Mostrando servicios para señoras' : 'Mostrando servicios para caballeros');
+        _render();
+    }
+
     // ── Public API ──
     return {
         init,
@@ -550,6 +567,8 @@ export const App = (() => {
         getTheme,
         applyTheme,
         toggleTheme,
+        getCatalogMode,
+        toggleCatalogMode,
         showModal,
         closeModal,
         showToast

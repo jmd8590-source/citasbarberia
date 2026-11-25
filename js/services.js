@@ -7,6 +7,8 @@ import { Security } from './security.js';
 import { App } from './app.js';
 
 export const ServicesAdmin = (() => {
+    let activeCategory = 'men';
+
     const iconOptions = [
         { value: 'scissors', label: 'Tijeras' },
         { value: 'pen-tool', label: 'Navaja' },
@@ -20,14 +22,14 @@ export const ServicesAdmin = (() => {
 
     // ── Main Render ──
     function render() {
-        const services = Storage.Services.getAll();
+        const services = Storage.Services.getByCategory(activeCategory);
 
         return `
         <div class="animate-fade-in-up">
-            <div class="page-header" style="display: flex; justify-content: space-between; align-items: flex-start;">
+            <div class="page-header" style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: var(--space-md);">
                 <div>
                     <h1 class="page-title">Servicios</h1>
-                    <p class="page-subtitle">Gestiona los servicios que ofreces</p>
+                    <p class="page-subtitle">Gestiona los servicios que ofreces — cada catálogo es independiente</p>
                 </div>
                 <button class="btn btn-primary" onclick="ServicesAdmin.showAddModal()">
                     <i data-lucide="plus"></i>
@@ -35,18 +37,32 @@ export const ServicesAdmin = (() => {
                 </button>
             </div>
 
+            <div class="tabs mb-lg" style="max-width: 400px;">
+                <div class="tab ${activeCategory === 'men' ? 'active' : ''}" onclick="ServicesAdmin.setCategory('men')">
+                    <i data-lucide="mars" style="width:14px;height:14px;"></i> Caballeros
+                </div>
+                <div class="tab ${activeCategory === 'women' ? 'active' : ''}" onclick="ServicesAdmin.setCategory('women')">
+                    <i data-lucide="venus" style="width:14px;height:14px;"></i> Señoras
+                </div>
+            </div>
+
             <div class="services-admin-list">
                 ${services.length === 0
                     ? `<div class="empty-state">
                         <i data-lucide="scissors"></i>
                         <h3>Sin servicios</h3>
-                        <p>Añade tu primer servicio para empezar</p>
+                        <p>Añade el primer servicio de este catálogo para empezar</p>
                     </div>`
                     : services.map(service => _renderServiceCard(service)).join('')
                 }
             </div>
         </div>
         `;
+    }
+
+    function setCategory(category) {
+        activeCategory = category === 'women' ? 'women' : 'men';
+        App.renderPage();
     }
 
     // ── Service Card ──
@@ -102,6 +118,7 @@ export const ServicesAdmin = (() => {
     function _showServiceModal(service) {
         const isEdit = !!service;
         const title = isEdit ? 'Editar servicio' : 'Nuevo servicio';
+        const category = isEdit ? service.category : activeCategory;
 
         App.showModal(`
             <div class="modal-header">
@@ -113,12 +130,19 @@ export const ServicesAdmin = (() => {
             <div class="modal-body">
                 <form id="serviceForm" onsubmit="ServicesAdmin.saveService(event, '${isEdit ? service.id : ''}')">
                     <div class="form-group">
+                        <label class="form-label">Catálogo</label>
+                        <select id="svcCategory" class="form-select">
+                            <option value="men" ${category === 'men' ? 'selected' : ''}>Caballeros</option>
+                            <option value="women" ${category === 'women' ? 'selected' : ''}>Señoras</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
                         <label class="form-label">Nombre del servicio</label>
-                        <input type="text" id="svcName" class="form-input" value="${isEdit ? service.name : ''}" required placeholder="Ej: Corte de cabello">
+                        <input type="text" id="svcName" class="form-input" value="${isEdit ? Security.escapeHTML(service.name) : ''}" required placeholder="Ej: Corte de cabello">
                     </div>
                     <div class="form-group">
                         <label class="form-label">Descripción</label>
-                        <textarea id="svcDescription" class="form-textarea" rows="2" placeholder="Descripción breve del servicio">${isEdit ? (service.description || '') : ''}</textarea>
+                        <textarea id="svcDescription" class="form-textarea" rows="2" placeholder="Descripción breve del servicio">${isEdit ? Security.escapeHTML(service.description || '') : ''}</textarea>
                     </div>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-md);">
                         <div class="form-group">
@@ -156,6 +180,7 @@ export const ServicesAdmin = (() => {
     function saveService(e, serviceId) {
         e.preventDefault();
         const data = {
+            category: document.getElementById('svcCategory').value === 'women' ? 'women' : 'men',
             name: Security.sanitizeString(document.getElementById('svcName').value, 100),
             description: Security.sanitizeString(document.getElementById('svcDescription').value, 300),
             duration: Math.max(5, Math.min(240, parseInt(document.getElementById('svcDuration').value) || 30)),
@@ -220,6 +245,7 @@ export const ServicesAdmin = (() => {
     // ── Public API ──
     return {
         render,
+        setCategory,
         showAddModal,
         showEditModal,
         saveService,

@@ -158,11 +158,19 @@ export const Storage = (() => {
     };
 
     // ── Services ──
+    // category: 'men' (Caballeros) | 'women' (Señoras) — each is an independent catalog.
     const Services = {
         getAll: () => getAll(KEYS.SERVICES),
-        getActive: () => query(KEYS.SERVICES, s => s.active !== false),
+        getByCategory: (category) => query(KEYS.SERVICES, s => s.category === category),
+        getActive: (category) => query(KEYS.SERVICES, s =>
+            s.active !== false && (!category || s.category === category)
+        ),
         getById: (id) => getById(KEYS.SERVICES, id),
-        create: (service) => create(KEYS.SERVICES, { ...service, active: true }),
+        create: (service) => create(KEYS.SERVICES, {
+            ...service,
+            category: service.category === 'women' ? 'women' : 'men',
+            active: true
+        }),
         update: (id, data) => update(KEYS.SERVICES, id, data),
         remove: (id) => remove(KEYS.SERVICES, id),
         toggle: (id) => {
@@ -390,10 +398,11 @@ export const Storage = (() => {
 
         _set(KEYS.USERS, [admin, client1, client2, client3]);
 
-        // Services
+        // Services — two independent catalogs: 'men' (Caballeros) / 'women' (Señoras)
         const services = [
             {
                 id: 'srv001',
+                category: 'men',
                 name: 'Corte de cabello',
                 description: 'Corte personalizado adaptado a tu estilo. Incluye lavado y peinado.',
                 duration: 30,
@@ -404,6 +413,7 @@ export const Storage = (() => {
             },
             {
                 id: 'srv002',
+                category: 'men',
                 name: 'Arreglo de barba',
                 description: 'Perfilado y arreglo de barba con navaja. Incluye toalla caliente.',
                 duration: 20,
@@ -414,11 +424,45 @@ export const Storage = (() => {
             },
             {
                 id: 'srv003',
+                category: 'men',
                 name: 'Corte + Barba',
                 description: 'Combo completo: corte de cabello y arreglo de barba. El pack más popular.',
                 duration: 45,
                 price: 18,
                 icon: 'star',
+                active: true,
+                createdAt: '2026-01-15T10:00:00Z'
+            },
+            {
+                id: 'srv004',
+                category: 'women',
+                name: 'Corte de cabello',
+                description: 'Corte personalizado con asesoramiento de imagen. Incluye lavado y peinado.',
+                duration: 45,
+                price: 20,
+                icon: 'scissors',
+                active: true,
+                createdAt: '2026-01-15T10:00:00Z'
+            },
+            {
+                id: 'srv005',
+                category: 'women',
+                name: 'Coloración',
+                description: 'Tinte completo con productos de alta gama. Incluye lavado e hidratación.',
+                duration: 90,
+                price: 45,
+                icon: 'sparkles',
+                active: true,
+                createdAt: '2026-01-15T10:00:00Z'
+            },
+            {
+                id: 'srv006',
+                category: 'women',
+                name: 'Peinado y recogido',
+                description: 'Peinado para eventos especiales. Incluye fijación de larga duración.',
+                duration: 60,
+                price: 30,
+                icon: 'crown',
                 active: true,
                 createdAt: '2026-01-15T10:00:00Z'
             }
