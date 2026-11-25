@@ -2,6 +2,20 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+    <script>
+    // Runs before first paint: avoids a flash of the wrong theme/language
+    // for returning visitors (the full i18n/theme system boots once js/app.js loads).
+    (function () {
+        try {
+            var theme = localStorage.getItem('bb_theme') || 'light';
+            document.documentElement.setAttribute('data-theme', theme);
+            var lang = localStorage.getItem('bb_lang');
+            if (!lang) lang = (navigator.language || 'es').toLowerCase().indexOf('en') === 0 ? 'en' : 'es';
+            document.documentElement.setAttribute('lang', lang);
+            window.__bbLoadingText = lang === 'en' ? 'Loading BarberClub...' : 'Cargando BarberClub...';
+        } catch (e) { /* localStorage unavailable (private mode, etc.) — safe to ignore */ }
+    })();
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="description" content="BarberClub — Reserva tu cita en la mejor barbería. Estilo, precisión y actitud. Cortes de cabello, arreglo de barba y más.">
     <meta name="theme-color" content="#FAF8F4">
@@ -34,9 +48,15 @@
         <!-- Loading state while JS loads -->
         <div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 1rem;">
             <div class="loading-spinner" style="width: 40px; height: 40px; border-width: 3px;"></div>
-            <p style="color: #A89F95; font-family: 'Inter', sans-serif; font-size: 0.875rem;">Cargando BarberClub...</p>
+            <p style="color: #A89F95; font-family: 'Inter', sans-serif; font-size: 0.875rem;" id="bootLoadingText">Cargando BarberClub...</p>
         </div>
     </div>
+    <script>
+        if (window.__bbLoadingText) {
+            var el = document.getElementById('bootLoadingText');
+            if (el) el.textContent = window.__bbLoadingText;
+        }
+    </script>
 
     <!-- Scripts (ES module graph: app.js imports everything it needs) -->
     <script type="module" src="js/app.js"></script>

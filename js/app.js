@@ -13,6 +13,7 @@ import { History } from './history.js';
 import { ServicesAdmin } from './services.js';
 import { Schedule } from './schedule.js';
 import { Admin } from './admin.js';
+import { t, getLang, setLang } from './i18n.js';
 
 export const App = (() => {
     let currentRoute = '';
@@ -22,28 +23,33 @@ export const App = (() => {
     const adminRoutes = ['dashboard', 'agenda', 'clients', 'admin-services', 'schedule', 'settings'];
     const publicRoutes = ['login', 'register'];
 
-    // ── Navigation Config ──
-    const clientNav = [
-        { route: 'home', label: 'Inicio', icon: 'home' },
-        { route: 'booking', label: 'Reservar', icon: 'scissors' },
-        { route: 'profile', label: 'Mi perfil', icon: 'user' },
-        { route: 'history', label: 'Historial', icon: 'clock' },
-        { route: 'contact', label: 'Contacto', icon: 'phone' }
-    ];
+    // ── Navigation Config (built fresh each render so labels follow the active language) ──
+    function _clientNav() {
+        return [
+            { route: 'home', label: t('Inicio'), icon: 'home' },
+            { route: 'booking', label: t('Reservar'), icon: 'scissors' },
+            { route: 'profile', label: t('Mi perfil'), icon: 'user' },
+            { route: 'history', label: t('Historial'), icon: 'clock' },
+            { route: 'contact', label: t('Contacto'), icon: 'phone' }
+        ];
+    }
 
-    const adminNav = [
-        { route: 'dashboard', label: 'Dashboard', icon: 'layout-dashboard' },
-        { route: 'agenda', label: 'Agenda', icon: 'calendar' },
-        { route: 'clients', label: 'Clientes', icon: 'users' },
-        { route: 'admin-services', label: 'Servicios', icon: 'scissors' },
-        { route: 'schedule', label: 'Horarios', icon: 'clock' },
-        { route: 'settings', label: 'Ajustes', icon: 'settings' }
-    ];
+    function _adminNav() {
+        return [
+            { route: 'dashboard', label: t('Dashboard'), icon: 'layout-dashboard' },
+            { route: 'agenda', label: t('Agenda'), icon: 'calendar' },
+            { route: 'clients', label: t('Clientes'), icon: 'users' },
+            { route: 'admin-services', label: t('Servicios'), icon: 'scissors' },
+            { route: 'schedule', label: t('Horarios'), icon: 'clock' },
+            { route: 'settings', label: t('Ajustes'), icon: 'settings' }
+        ];
+    }
 
     // ── Initialize ──
     function init() {
         Storage.seedDemoData();
         applyTheme();
+        setLang(getLang());
 
         // Listen for hash changes
         window.addEventListener('hashchange', _handleRoute);
@@ -118,7 +124,7 @@ export const App = (() => {
     function _renderAppShell() {
         const user = Storage.Session.getCurrentUser();
         const isAdmin = Storage.Session.isAdmin();
-        const nav = isAdmin ? adminNav : clientNav;
+        const nav = isAdmin ? _adminNav() : _clientNav();
 
         return `
         <div class="app-layout">
@@ -128,7 +134,7 @@ export const App = (() => {
                     <div class="sidebar-logo">${brandLogoHTML(32)}</div>
                 </div>
                 <nav class="sidebar-nav">
-                    <div class="sidebar-section-label">${isAdmin ? 'Administración' : 'Menú'}</div>
+                    <div class="sidebar-section-label">${isAdmin ? t('Administración') : t('Menú')}</div>
                     ${nav.map(item => `
                         <div class="sidebar-nav-item ${currentRoute === item.route ? 'active' : ''}"
                              onclick="App.navigate('${item.route}')">
@@ -144,9 +150,9 @@ export const App = (() => {
                         </div>
                         <div class="sidebar-user-info">
                             <div class="sidebar-user-name">${Security.escapeHTML(user.name)}</div>
-                            <div class="sidebar-user-role">${isAdmin ? 'Administrador' : 'Cliente'}</div>
+                            <div class="sidebar-user-role">${isAdmin ? t('Administrador') : t('Cliente')}</div>
                         </div>
-                        <i data-lucide="log-out" style="width:18px; height:18px; color: var(--text-muted); cursor: pointer;" onclick="event.stopPropagation(); Auth.logout();"></i>
+                        <i data-lucide="log-out" style="width:18px; height:18px; color: var(--text-muted); cursor: pointer;" onclick="event.stopPropagation(); Auth.logout();" role="button" aria-label="${t('Salir')}" tabindex="0"></i>
                     </div>
                 </div>
             </aside>
@@ -156,21 +162,24 @@ export const App = (() => {
                 <!-- Top Bar -->
                 <header class="app-topbar">
                     <div class="flex items-center gap-md">
-                        <button class="btn btn-ghost btn-icon hide-desktop" id="menuToggle" onclick="App.toggleSidebar()">
+                        <button class="btn btn-ghost btn-icon hide-desktop" id="menuToggle" onclick="App.toggleSidebar()" aria-label="${t('Menú')}">
                             <i data-lucide="menu"></i>
                         </button>
                         <h2 style="font-size: var(--fs-md); font-weight: 600;">${_getPageTitle()}</h2>
                     </div>
                     <div class="flex items-center gap-sm">
                         ${!isAdmin ? `
-                        <button class="btn btn-ghost btn-icon tooltip-below" onclick="App.toggleCatalogMode()" data-tooltip="${getCatalogMode() === 'women' ? 'Ver catálogo Caballeros' : 'Ver catálogo Señoras'}">
+                        <button class="btn btn-ghost btn-icon tooltip-below" onclick="App.toggleCatalogMode()" data-tooltip="${getCatalogMode() === 'women' ? t('Ver catálogo Caballeros') : t('Ver catálogo Señoras')}">
                             <i data-lucide="${getCatalogMode() === 'women' ? 'venus' : 'mars'}"></i>
                         </button>` : ''}
-                        <button class="btn btn-ghost btn-icon tooltip-below" onclick="App.toggleTheme()" data-tooltip="Cambiar tema">
-                            <i data-lucide="${App.getTheme() === 'dark' ? 'sun' : 'moon'}"></i>
+                        <button class="btn btn-ghost btn-sm tooltip-below" onclick="App.toggleLang()" data-tooltip="${t('Cambiar idioma')}">
+                            <i data-lucide="globe"></i> ${getLang().toUpperCase()}
+                        </button>
+                        <button class="btn btn-ghost btn-icon tooltip-below" onclick="App.toggleTheme()" data-tooltip="${t('Cambiar tema')}">
+                            <i data-lucide="${getTheme() === 'dark' ? 'sun' : 'moon'}"></i>
                         </button>
                         <span class="text-secondary hide-mobile" style="font-size: var(--fs-sm);">
-                            Hola, ${Security.escapeHTML(user.name.split(' ')[0])}
+                            ${t('Hola, {name}', { name: Security.escapeHTML(user.name.split(' ')[0]) })}
                         </span>
                         <div class="avatar avatar-sm" style="cursor: pointer;" onclick="${isAdmin ? '' : "App.navigate('profile')" }">
                             ${user.avatar && Security.isSafeImageDataUrl(user.avatar) ? `<img src="${user.avatar}" alt="">` : _getInitials(user.name)}
@@ -187,7 +196,7 @@ export const App = (() => {
             <!-- Bottom Nav (Mobile) -->
             <nav class="bottom-nav">
                 <div class="bottom-nav-items">
-                    ${(isAdmin ? adminNav.slice(0, 4) : clientNav.slice(0, 4)).map(item => `
+                    ${(isAdmin ? _adminNav().slice(0, 4) : _clientNav().slice(0, 4)).map(item => `
                         <div class="bottom-nav-item ${currentRoute === item.route ? 'active' : ''}"
                              onclick="App.navigate('${item.route}')">
                             <i data-lucide="${item.icon}"></i>
@@ -196,7 +205,7 @@ export const App = (() => {
                     `).join('')}
                     <div class="bottom-nav-item bottom-nav-logout" onclick="Auth.logout()">
                         <i data-lucide="log-out"></i>
-                        <span>Salir</span>
+                        <span>${t('Salir')}</span>
                     </div>
                 </div>
             </nav>
@@ -209,7 +218,7 @@ export const App = (() => {
         <div id="modalContainer"></div>
 
         <!-- Toast Container -->
-        <div class="toast-container" id="toastContainer"></div>
+        <div class="toast-container" id="toastContainer" aria-live="polite"></div>
         `;
     }
 
@@ -238,10 +247,10 @@ export const App = (() => {
 
     function _getPageTitle() {
         const titles = {
-            home: 'Inicio', booking: 'Reservar cita', profile: 'Mi perfil',
-            history: 'Historial', contact: 'Contacto',
-            dashboard: 'Dashboard', agenda: 'Agenda', clients: 'Clientes',
-            'admin-services': 'Servicios', schedule: 'Horarios', settings: 'Ajustes'
+            home: t('Inicio'), booking: t('Reservar cita'), profile: t('Mi perfil'),
+            history: t('Historial'), contact: t('Contacto'),
+            dashboard: t('Dashboard'), agenda: t('Agenda'), clients: t('Clientes'),
+            'admin-services': t('Servicios'), schedule: t('Horarios'), settings: t('Ajustes')
         };
         return titles[currentRoute] || 'BarberClub';
     }
@@ -259,14 +268,14 @@ export const App = (() => {
         if (nextAppt) {
             const svc = Storage.Services.getById(nextAppt.serviceId);
             const d = new Date(nextAppt.date + 'T12:00:00');
-            const monthNames = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
-            const dayNames = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+            const monthNames = [t('Ene'), t('Feb'), t('Mar'), t('Abr'), t('May'), t('Jun'), t('Jul'), t('Ago'), t('Sep'), t('Oct'), t('Nov'), t('Dic')];
+            const dayNames = [t('Domingo'), t('Lunes'), t('Martes'), t('Miércoles'), t('Jueves'), t('Viernes'), t('Sábado')];
 
             nextApptHTML = `
             <div class="home-next-appointment animate-fade-in-up stagger-2">
                 <div class="home-next-appointment-header">
                     <i data-lucide="calendar-check" style="width:16px; height:16px;"></i>
-                    Tu próxima cita
+                    ${t('Tu próxima cita')}
                 </div>
                 <div class="home-appointment-card">
                     <div class="home-appointment-date">
@@ -274,11 +283,11 @@ export const App = (() => {
                         <div class="home-appointment-month">${monthNames[d.getMonth()]}</div>
                     </div>
                     <div class="home-appointment-info">
-                        <h4>${svc ? svc.name : 'Servicio'}</h4>
-                        <p>${dayNames[d.getDay()]} a las ${nextAppt.time} h ${svc ? `· ${svc.duration} min` : ''}</p>
+                        <h4>${svc ? Security.escapeHTML(svc.name) : t('Servicio')}</h4>
+                        <p>${dayNames[d.getDay()]} ${t('a las {time} h', { time: nextAppt.time })} ${svc ? `· ${svc.duration} min` : ''}</p>
                     </div>
                     <button class="btn btn-outline btn-sm" onclick="App.navigate('history')">
-                        Ver detalles
+                        ${t('Ver detalles')}
                     </button>
                 </div>
             </div>
@@ -289,12 +298,12 @@ export const App = (() => {
         <div>
             <!-- Hero -->
             <div class="home-hero animate-fade-in-up">
-                <p class="home-greeting">Bienvenido, <strong>${Security.escapeHTML(user.name.split(' ')[0])}</strong></p>
+                <p class="home-greeting">${t('Bienvenido')}, <strong>${Security.escapeHTML(user.name.split(' ')[0])}</strong></p>
                 <h1>${Security.escapeHTML(settings.shopName || 'BarberClub')}</h1>
-                <p>${Security.escapeHTML(settings.description || 'Tu barbería de confianza')}</p>
+                <p>${Security.escapeHTML(settings.description) || t('Tu barbería de confianza')}</p>
                 <button class="btn btn-primary btn-xl" onclick="App.navigate('booking')">
                     <i data-lucide="scissors"></i>
-                    Reservar cita ahora
+                    ${t('Reservar cita ahora')}
                 </button>
             </div>
 
@@ -302,15 +311,15 @@ export const App = (() => {
 
             <!-- Quick Actions -->
             <div class="home-quick-actions animate-fade-in-up stagger-3">
-                <h3>Accesos rápidos</h3>
+                <h3>${t('Accesos rápidos')}</h3>
                 <div class="quick-action-grid">
                     <div class="quick-action-card" onclick="App.navigate('booking')">
                         <div class="quick-action-icon">
                             <i data-lucide="calendar-plus"></i>
                         </div>
                         <div>
-                            <h4>Nueva cita</h4>
-                            <p>Reserva rápidamente</p>
+                            <h4>${t('Nueva cita')}</h4>
+                            <p>${t('Reserva rápidamente')}</p>
                         </div>
                     </div>
                     <div class="quick-action-card" onclick="App.navigate('history')">
@@ -318,8 +327,8 @@ export const App = (() => {
                             <i data-lucide="clock"></i>
                         </div>
                         <div>
-                            <h4>Mis citas</h4>
-                            <p>Ver historial completo</p>
+                            <h4>${t('Mis citas')}</h4>
+                            <p>${t('Ver historial completo')}</p>
                         </div>
                     </div>
                     <div class="quick-action-card" onclick="App.navigate('profile')">
@@ -327,8 +336,8 @@ export const App = (() => {
                             <i data-lucide="user"></i>
                         </div>
                         <div>
-                            <h4>Mi perfil</h4>
-                            <p>Editar información</p>
+                            <h4>${t('Mi perfil')}</h4>
+                            <p>${t('Editar información')}</p>
                         </div>
                     </div>
                     <div class="quick-action-card" onclick="App.navigate('contact')">
@@ -336,8 +345,8 @@ export const App = (() => {
                             <i data-lucide="map-pin"></i>
                         </div>
                         <div>
-                            <h4>Contacto</h4>
-                            <p>Ubicación y horarios</p>
+                            <h4>${t('Contacto')}</h4>
+                            <p>${t('Ubicación y horarios')}</p>
                         </div>
                     </div>
                 </div>
@@ -352,28 +361,28 @@ export const App = (() => {
         const config = Storage.getScheduleConfig();
 
         const dayNames = {
-            mon: 'Lunes', tue: 'Martes', wed: 'Miércoles', thu: 'Jueves',
-            fri: 'Viernes', sat: 'Sábado', sun: 'Domingo'
+            mon: t('Lunes'), tue: t('Martes'), wed: t('Miércoles'), thu: t('Jueves'),
+            fri: t('Viernes'), sat: t('Sábado'), sun: t('Domingo')
         };
         const dayOrder = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 
         return `
         <div class="animate-fade-in-up">
             <div class="page-header">
-                <h1 class="page-title">Contacto</h1>
-                <p class="page-subtitle">Estamos aquí para ti</p>
+                <h1 class="page-title">${t('Contacto')}</h1>
+                <p class="page-subtitle">${t('Estamos aquí para ti')}</p>
             </div>
 
             <div class="contact-grid">
                 <div class="contact-info-card">
-                    <h3 style="margin-bottom: var(--space-lg);">Información</h3>
+                    <h3 style="margin-bottom: var(--space-lg);">${t('Información')}</h3>
                     <div class="contact-item">
                         <div class="contact-item-icon">
                             <i data-lucide="map-pin"></i>
                         </div>
                         <div>
-                            <h4>Dirección</h4>
-                            <p>${Security.escapeHTML(settings.address) || 'No configurada'}</p>
+                            <h4>${t('Dirección')}</h4>
+                            <p>${Security.escapeHTML(settings.address) || t('No configurada')}</p>
                         </div>
                     </div>
                     <div class="contact-item">
@@ -381,8 +390,8 @@ export const App = (() => {
                             <i data-lucide="phone"></i>
                         </div>
                         <div>
-                            <h4>Teléfono</h4>
-                            <p>${Security.escapeHTML(settings.phone) || 'No configurado'}</p>
+                            <h4>${t('Teléfono')}</h4>
+                            <p>${Security.escapeHTML(settings.phone) || t('No configurado')}</p>
                         </div>
                     </div>
                     <div class="contact-item">
@@ -390,8 +399,8 @@ export const App = (() => {
                             <i data-lucide="mail"></i>
                         </div>
                         <div>
-                            <h4>Email</h4>
-                            <p>${Security.escapeHTML(settings.email) || 'No configurado'}</p>
+                            <h4>${t('Email')}</h4>
+                            <p>${Security.escapeHTML(settings.email) || t('No configurado')}</p>
                         </div>
                     </div>
                     <div class="contact-item">
@@ -399,8 +408,8 @@ export const App = (() => {
                             <i data-lucide="at-sign"></i>
                         </div>
                         <div>
-                            <h4>Instagram</h4>
-                            <p>${Security.escapeHTML(settings.instagram) || 'No configurado'}</p>
+                            <h4>${t('Instagram')}</h4>
+                            <p>${Security.escapeHTML(settings.instagram) || t('No configurado')}</p>
                         </div>
                     </div>
                 </div>
@@ -408,21 +417,21 @@ export const App = (() => {
                 <div class="contact-map">
                     <div class="contact-map-placeholder">
                         <i data-lucide="map"></i>
-                        <p>${Security.escapeHTML(settings.address) || 'Ubicación de la barbería'}</p>
-                        <p class="text-muted" style="font-size: var(--fs-xs); margin-top: var(--space-sm);">Mapa interactivo</p>
+                        <p>${Security.escapeHTML(settings.address) || t('Ubicación de la barbería')}</p>
+                        <p class="text-muted" style="font-size: var(--fs-xs); margin-top: var(--space-sm);">${t('Mapa interactivo')}</p>
                     </div>
                 </div>
             </div>
 
             <div class="contact-schedule animate-fade-in-up stagger-2">
-                <h3 style="margin-bottom: var(--space-lg);">Horario de apertura</h3>
+                <h3 style="margin-bottom: var(--space-lg);">${t('Horario de apertura')}</h3>
                 ${dayOrder.map(day => `
                     <div class="schedule-row ${!config.workDays[day] ? 'closed' : ''}">
                         <span class="day">${dayNames[day]}</span>
                         <span class="hours">
                             ${config.workDays[day]
                                 ? `${config.hours.start} — ${config.hours.end}`
-                                : 'Cerrado'}
+                                : t('Cerrado')}
                         </span>
                     </div>
                 `).join('')}
@@ -458,7 +467,7 @@ export const App = (() => {
 
         document.getElementById('modalContainer').innerHTML = `
             <div class="modal-overlay" onclick="App.closeModal(event)">
-                <div class="modal" onclick="event.stopPropagation()">
+                <div class="modal" role="dialog" aria-modal="true" onclick="event.stopPropagation()">
                     ${content}
                 </div>
             </div>
@@ -479,6 +488,7 @@ export const App = (() => {
             container = document.createElement('div');
             container.className = 'toast-container';
             container.id = 'toastContainer';
+            container.setAttribute('aria-live', 'polite');
             document.body.appendChild(container);
         }
 
@@ -497,7 +507,7 @@ export const App = (() => {
                 <div class="toast-title">${title}</div>
                 ${message ? `<div class="toast-message">${message}</div>` : ''}
             </div>
-            <i data-lucide="x" class="toast-close" onclick="this.parentElement.remove()"></i>
+            <i data-lucide="x" class="toast-close" onclick="this.parentElement.remove()" role="button" tabindex="0" aria-label="${t('Cerrar')}"></i>
         `;
 
         container.appendChild(toast);
@@ -535,7 +545,7 @@ export const App = (() => {
         const next = current === 'dark' ? 'light' : 'dark';
         localStorage.setItem('bb_theme', next);
         applyTheme();
-        showToast('info', 'Tema actualizado', next === 'dark' ? 'Modo oscuro activado' : 'Modo claro activado');
+        showToast('info', t('Tema actualizado'), next === 'dark' ? t('Modo oscuro activado') : t('Modo claro activado'));
         _render();
     }
 
@@ -551,8 +561,15 @@ export const App = (() => {
     function toggleCatalogMode() {
         const next = getCatalogMode() === 'men' ? 'women' : 'men';
         localStorage.setItem('bb_catalog_mode', next);
-        showToast('info', next === 'women' ? 'Catálogo: Señoras' : 'Catálogo: Caballeros',
-            next === 'women' ? 'Mostrando servicios para señoras' : 'Mostrando servicios para caballeros');
+        showToast('info', next === 'women' ? t('Catálogo: Señoras') : t('Catálogo: Caballeros'),
+            next === 'women' ? t('Mostrando servicios para señoras') : t('Mostrando servicios para caballeros'));
+        _render();
+    }
+
+    // ── Language ──
+    function toggleLang() {
+        const next = getLang() === 'es' ? 'en' : 'es';
+        setLang(next);
         _render();
     }
 
@@ -569,6 +586,8 @@ export const App = (() => {
         toggleTheme,
         getCatalogMode,
         toggleCatalogMode,
+        getLang,
+        toggleLang,
         showModal,
         closeModal,
         showToast

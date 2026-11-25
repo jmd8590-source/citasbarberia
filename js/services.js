@@ -5,20 +5,23 @@
 import { Storage } from './storage.js';
 import { Security } from './security.js';
 import { App } from './app.js';
+import { t } from './i18n.js';
 
 export const ServicesAdmin = (() => {
     let activeCategory = 'men';
 
-    const iconOptions = [
-        { value: 'scissors', label: 'Tijeras' },
-        { value: 'pen-tool', label: 'Navaja' },
-        { value: 'star', label: 'Estrella' },
-        { value: 'sparkles', label: 'Destellos' },
-        { value: 'zap', label: 'Rayo' },
-        { value: 'crown', label: 'Corona' },
-        { value: 'gem', label: 'Gema' },
-        { value: 'heart', label: 'Corazón' }
-    ];
+    function _iconOptions() {
+        return [
+            { value: 'scissors', label: t('Tijeras') },
+            { value: 'pen-tool', label: t('Navaja') },
+            { value: 'star', label: t('Estrella') },
+            { value: 'sparkles', label: t('Destellos') },
+            { value: 'zap', label: t('Rayo') },
+            { value: 'crown', label: t('Corona') },
+            { value: 'gem', label: t('Gema') },
+            { value: 'heart', label: t('Corazón') }
+        ];
+    }
 
     // ── Main Render ──
     function render() {
@@ -28,21 +31,21 @@ export const ServicesAdmin = (() => {
         <div class="animate-fade-in-up">
             <div class="page-header" style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: var(--space-md);">
                 <div>
-                    <h1 class="page-title">Servicios</h1>
-                    <p class="page-subtitle">Gestiona los servicios que ofreces — cada catálogo es independiente</p>
+                    <h1 class="page-title">${t('Servicios')}</h1>
+                    <p class="page-subtitle">${t('Gestiona los servicios que ofreces — cada catálogo es independiente')}</p>
                 </div>
                 <button class="btn btn-primary" onclick="ServicesAdmin.showAddModal()">
                     <i data-lucide="plus"></i>
-                    Nuevo servicio
+                    ${t('Nuevo servicio')}
                 </button>
             </div>
 
             <div class="tabs mb-lg" style="max-width: 400px;">
                 <div class="tab ${activeCategory === 'men' ? 'active' : ''}" onclick="ServicesAdmin.setCategory('men')">
-                    <i data-lucide="mars" style="width:14px;height:14px;"></i> Caballeros
+                    <i data-lucide="mars" style="width:14px;height:14px;"></i> ${t('Caballeros')}
                 </div>
                 <div class="tab ${activeCategory === 'women' ? 'active' : ''}" onclick="ServicesAdmin.setCategory('women')">
-                    <i data-lucide="venus" style="width:14px;height:14px;"></i> Señoras
+                    <i data-lucide="venus" style="width:14px;height:14px;"></i> ${t('Señoras')}
                 </div>
             </div>
 
@@ -50,8 +53,8 @@ export const ServicesAdmin = (() => {
                 ${services.length === 0
                     ? `<div class="empty-state">
                         <i data-lucide="scissors"></i>
-                        <h3>Sin servicios</h3>
-                        <p>Añade el primer servicio de este catálogo para empezar</p>
+                        <h3>${t('Sin servicios')}</h3>
+                        <p>${t('Añade el primer servicio de este catálogo para empezar')}</p>
                     </div>`
                     : services.map(service => _renderServiceCard(service)).join('')
                 }
@@ -73,8 +76,8 @@ export const ServicesAdmin = (() => {
                 <i data-lucide="${Security.escapeHTML(service.icon || 'scissors')}"></i>
             </div>
             <div class="service-admin-info">
-                <h4>${Security.escapeHTML(service.name)} ${!service.active ? '<span class="badge badge-neutral">Inactivo</span>' : ''}</h4>
-                <p>${Security.escapeHTML(service.description || 'Sin descripción')}</p>
+                <h4>${Security.escapeHTML(service.name)} ${!service.active ? `<span class="badge badge-neutral">${t('Inactivo')}</span>` : ''}</h4>
+                <p>${Security.escapeHTML(service.description) || t('Sin descripción')}</p>
                 <div class="service-admin-meta">
                     <span class="badge badge-accent">
                         <i data-lucide="clock" style="width:12px;height:12px"></i>
@@ -88,15 +91,15 @@ export const ServicesAdmin = (() => {
             </div>
             <div class="service-admin-actions">
                 <button class="btn btn-ghost btn-sm" onclick="ServicesAdmin.toggleService('${service.id}')"
-                    data-tooltip="${service.active ? 'Desactivar' : 'Activar'}">
+                    data-tooltip="${service.active ? t('Desactivar') : t('Activar')}">
                     <i data-lucide="${service.active ? 'eye-off' : 'eye'}"></i>
                 </button>
                 <button class="btn btn-ghost btn-sm" onclick="ServicesAdmin.showEditModal('${service.id}')"
-                    data-tooltip="Editar">
+                    data-tooltip="${t('Editar')}">
                     <i data-lucide="edit-2"></i>
                 </button>
                 <button class="btn btn-ghost btn-sm" onclick="ServicesAdmin.deleteService('${service.id}')"
-                    data-tooltip="Eliminar">
+                    data-tooltip="${t('Eliminar')}">
                     <i data-lucide="trash-2"></i>
                 </button>
             </div>
@@ -117,47 +120,47 @@ export const ServicesAdmin = (() => {
 
     function _showServiceModal(service) {
         const isEdit = !!service;
-        const title = isEdit ? 'Editar servicio' : 'Nuevo servicio';
+        const title = isEdit ? t('Editar servicio') : t('Nuevo servicio');
         const category = isEdit ? service.category : activeCategory;
 
         App.showModal(`
             <div class="modal-header">
                 <h3 class="modal-title">${title}</h3>
-                <button class="modal-close" onclick="App.closeModal()">
+                <button class="modal-close" onclick="App.closeModal()" aria-label="${t('Cerrar')}">
                     <i data-lucide="x"></i>
                 </button>
             </div>
             <div class="modal-body">
                 <form id="serviceForm" onsubmit="ServicesAdmin.saveService(event, '${isEdit ? service.id : ''}')">
                     <div class="form-group">
-                        <label class="form-label">Catálogo</label>
+                        <label class="form-label" for="svcCategory">${t('Catálogo')}</label>
                         <select id="svcCategory" class="form-select">
-                            <option value="men" ${category === 'men' ? 'selected' : ''}>Caballeros</option>
-                            <option value="women" ${category === 'women' ? 'selected' : ''}>Señoras</option>
+                            <option value="men" ${category === 'men' ? 'selected' : ''}>${t('Caballeros')}</option>
+                            <option value="women" ${category === 'women' ? 'selected' : ''}>${t('Señoras')}</option>
                         </select>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Nombre del servicio</label>
-                        <input type="text" id="svcName" class="form-input" value="${isEdit ? Security.escapeHTML(service.name) : ''}" required placeholder="Ej: Corte de cabello">
+                        <label class="form-label" for="svcName">${t('Nombre del servicio')}</label>
+                        <input type="text" id="svcName" class="form-input" value="${isEdit ? Security.escapeHTML(service.name) : ''}" required placeholder="${t('Ej: Corte de cabello')}">
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Descripción</label>
-                        <textarea id="svcDescription" class="form-textarea" rows="2" placeholder="Descripción breve del servicio">${isEdit ? Security.escapeHTML(service.description || '') : ''}</textarea>
+                        <label class="form-label" for="svcDescription">${t('Descripción')}</label>
+                        <textarea id="svcDescription" class="form-textarea" rows="2" placeholder="${t('Descripción breve del servicio')}">${isEdit ? Security.escapeHTML(service.description || '') : ''}</textarea>
                     </div>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-md);">
                         <div class="form-group">
-                            <label class="form-label">Duración (min)</label>
+                            <label class="form-label" for="svcDuration">${t('Duración (min)')}</label>
                             <input type="number" id="svcDuration" class="form-input" value="${isEdit ? service.duration : '30'}" required min="5" max="240" step="5">
                         </div>
                         <div class="form-group">
-                            <label class="form-label">Precio (€)</label>
+                            <label class="form-label" for="svcPrice">${t('Precio (€)')}</label>
                             <input type="number" id="svcPrice" class="form-input" value="${isEdit ? service.price : ''}" required min="0" step="0.5">
                         </div>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Icono</label>
+                        <label class="form-label" for="svcIcon">${t('Icono')}</label>
                         <select id="svcIcon" class="form-select">
-                            ${iconOptions.map(opt => `
+                            ${_iconOptions().map(opt => `
                                 <option value="${opt.value}" ${isEdit && service.icon === opt.value ? 'selected' : ''}>
                                     ${opt.label}
                                 </option>
@@ -165,10 +168,10 @@ export const ServicesAdmin = (() => {
                         </select>
                     </div>
                     <div class="modal-footer" style="padding: var(--space-md) 0 0; border-top: none;">
-                        <button type="button" class="btn btn-secondary" onclick="App.closeModal()">Cancelar</button>
+                        <button type="button" class="btn btn-secondary" onclick="App.closeModal()">${t('Cancelar')}</button>
                         <button type="submit" class="btn btn-primary">
                             <i data-lucide="save"></i>
-                            ${isEdit ? 'Guardar cambios' : 'Crear servicio'}
+                            ${isEdit ? t('Guardar cambios') : t('Crear servicio')}
                         </button>
                     </div>
                 </form>
@@ -190,10 +193,10 @@ export const ServicesAdmin = (() => {
 
         if (serviceId) {
             Storage.Services.update(serviceId, data);
-            App.showToast('success', 'Actualizado', 'El servicio ha sido actualizado');
+            App.showToast('success', t('Actualizado'), t('El servicio ha sido actualizado'));
         } else {
             Storage.Services.create(data);
-            App.showToast('success', 'Creado', 'El nuevo servicio ha sido añadido');
+            App.showToast('success', t('Creado'), t('El nuevo servicio ha sido añadido'));
         }
 
         App.closeModal();
@@ -204,8 +207,8 @@ export const ServicesAdmin = (() => {
     function toggleService(serviceId) {
         const service = Storage.Services.toggle(serviceId);
         if (service) {
-            App.showToast('info', service.active ? 'Activado' : 'Desactivado',
-                `El servicio ha sido ${service.active ? 'activado' : 'desactivado'}`);
+            App.showToast('info', service.active ? t('Activado') : t('Desactivado'),
+                t('El servicio ha sido {state}', { state: service.active ? t('activado') : t('desactivado') }));
         }
         App.renderPage();
     }
@@ -214,8 +217,8 @@ export const ServicesAdmin = (() => {
     function deleteService(serviceId) {
         App.showModal(`
             <div class="modal-header">
-                <h3 class="modal-title">Eliminar servicio</h3>
-                <button class="modal-close" onclick="App.closeModal()">
+                <h3 class="modal-title">${t('Eliminar servicio')}</h3>
+                <button class="modal-close" onclick="App.closeModal()" aria-label="${t('Cerrar')}">
                     <i data-lucide="x"></i>
                 </button>
             </div>
@@ -223,13 +226,13 @@ export const ServicesAdmin = (() => {
                 <div class="confirm-icon confirm-icon-danger" style="margin: 0 auto var(--space-md);">
                     <i data-lucide="trash-2"></i>
                 </div>
-                <h3 style="margin-bottom: var(--space-sm);">¿Eliminar servicio?</h3>
-                <p class="confirm-message">Esta acción no se puede deshacer.</p>
+                <h3 style="margin-bottom: var(--space-sm);">${t('¿Eliminar servicio?')}</h3>
+                <p class="confirm-message">${t('Esta acción no se puede deshacer.')}</p>
             </div>
             <div class="modal-footer" style="justify-content: center;">
-                <button class="btn btn-secondary" onclick="App.closeModal()">Cancelar</button>
+                <button class="btn btn-secondary" onclick="App.closeModal()">${t('Cancelar')}</button>
                 <button class="btn btn-danger" onclick="ServicesAdmin.confirmDelete('${serviceId}')">
-                    <i data-lucide="trash-2"></i> Eliminar
+                    <i data-lucide="trash-2"></i> ${t('Eliminar')}
                 </button>
             </div>
         `);
@@ -238,7 +241,7 @@ export const ServicesAdmin = (() => {
     function confirmDelete(serviceId) {
         Storage.Services.remove(serviceId);
         App.closeModal();
-        App.showToast('info', 'Eliminado', 'El servicio ha sido eliminado');
+        App.showToast('info', t('Eliminado'), t('El servicio ha sido eliminado'));
         App.renderPage();
     }
 

@@ -5,23 +5,27 @@
 import { Storage } from './storage.js';
 import { Security } from './security.js';
 import { App } from './app.js';
+import { t } from './i18n.js';
 
 export const Schedule = (() => {
-    const dayNames = {
-        mon: 'Lunes', tue: 'Martes', wed: 'Miércoles', thu: 'Jueves',
-        fri: 'Viernes', sat: 'Sábado', sun: 'Domingo'
-    };
+    function _dayNames() {
+        return {
+            mon: t('Lunes'), tue: t('Martes'), wed: t('Miércoles'), thu: t('Jueves'),
+            fri: t('Viernes'), sat: t('Sábado'), sun: t('Domingo')
+        };
+    }
     const dayOrder = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 
     // ── Main Render ──
     function render() {
         const config = Storage.getScheduleConfig();
+        const dayNames = _dayNames();
 
         return `
         <div class="animate-fade-in-up">
             <div class="page-header">
-                <h1 class="page-title">Horarios</h1>
-                <p class="page-subtitle">Configura tu disponibilidad y bloqueos</p>
+                <h1 class="page-title">${t('Horarios')}</h1>
+                <p class="page-subtitle">${t('Configura tu disponibilidad y bloqueos')}</p>
             </div>
 
             <div class="schedule-config">
@@ -29,7 +33,7 @@ export const Schedule = (() => {
                 <div>
                     <div class="schedule-days">
                         <div class="card-header">
-                            <h3 class="card-title">Días laborables</h3>
+                            <h3 class="card-title">${t('Días laborables')}</h3>
                         </div>
                         ${dayOrder.map(day => `
                             <div class="schedule-day-row">
@@ -54,18 +58,18 @@ export const Schedule = (() => {
 
                     <div class="card mt-lg" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: var(--space-lg);">
                         <div class="card-header">
-                            <h3 class="card-title">Duración de slots</h3>
+                            <h3 class="card-title">${t('Duración de slots')}</h3>
                         </div>
                         <div class="form-group" style="margin-bottom: 0;">
                             <select class="form-select" id="slotDuration" value="${config.slotDuration}"
                                 onchange="Schedule.updateSlotDuration(this.value)">
-                                <option value="15" ${config.slotDuration === 15 ? 'selected' : ''}>15 minutos</option>
-                                <option value="20" ${config.slotDuration === 20 ? 'selected' : ''}>20 minutos</option>
-                                <option value="30" ${config.slotDuration === 30 ? 'selected' : ''}>30 minutos</option>
-                                <option value="45" ${config.slotDuration === 45 ? 'selected' : ''}>45 minutos</option>
-                                <option value="60" ${config.slotDuration === 60 ? 'selected' : ''}>60 minutos</option>
+                                <option value="15" ${config.slotDuration === 15 ? 'selected' : ''}>15 ${t('minutos')}</option>
+                                <option value="20" ${config.slotDuration === 20 ? 'selected' : ''}>20 ${t('minutos')}</option>
+                                <option value="30" ${config.slotDuration === 30 ? 'selected' : ''}>30 ${t('minutos')}</option>
+                                <option value="45" ${config.slotDuration === 45 ? 'selected' : ''}>45 ${t('minutos')}</option>
+                                <option value="60" ${config.slotDuration === 60 ? 'selected' : ''}>60 ${t('minutos')}</option>
                             </select>
-                            <span class="form-hint">Intervalo mínimo entre citas</span>
+                            <span class="form-hint">${t('Intervalo mínimo entre citas')}</span>
                         </div>
                     </div>
                 </div>
@@ -75,17 +79,17 @@ export const Schedule = (() => {
                     <!-- Blocks -->
                     <div class="schedule-blocks">
                         <div class="card-header">
-                            <h3 class="card-title">Bloqueos puntuales</h3>
+                            <h3 class="card-title">${t('Bloqueos puntuales')}</h3>
                             <button class="btn btn-ghost btn-sm" onclick="Schedule.showAddBlockModal()">
-                                <i data-lucide="plus"></i> Añadir
+                                <i data-lucide="plus"></i> ${t('Añadir')}
                             </button>
                         </div>
                         <p class="text-secondary" style="font-size: var(--fs-sm); margin-bottom: var(--space-md);">
-                            Días específicos en los que no aceptas citas
+                            ${t('Días específicos en los que no aceptas citas')}
                         </p>
                         <div class="block-list" id="blockList">
                             ${(config.blocks || []).length === 0
-                                ? '<p class="text-muted" style="font-size: var(--fs-sm); text-align: center; padding: var(--space-md);">No hay bloqueos configurados</p>'
+                                ? `<p class="text-muted" style="font-size: var(--fs-sm); text-align: center; padding: var(--space-md);">${t('No hay bloqueos configurados')}</p>`
                                 : (config.blocks || []).map(block => `
                                     <div class="block-item">
                                         <div class="block-item-info">
@@ -104,17 +108,17 @@ export const Schedule = (() => {
                     <!-- Vacations -->
                     <div class="schedule-blocks mt-lg">
                         <div class="card-header">
-                            <h3 class="card-title">Vacaciones</h3>
+                            <h3 class="card-title">${t('Vacaciones')}</h3>
                             <button class="btn btn-ghost btn-sm" onclick="Schedule.showAddVacationModal()">
-                                <i data-lucide="plus"></i> Añadir
+                                <i data-lucide="plus"></i> ${t('Añadir')}
                             </button>
                         </div>
                         <p class="text-secondary" style="font-size: var(--fs-sm); margin-bottom: var(--space-md);">
-                            Periodos de vacaciones en los que cierras
+                            ${t('Periodos de vacaciones en los que cierras')}
                         </p>
                         <div class="block-list" id="vacationList">
                             ${(config.vacations || []).length === 0
-                                ? '<p class="text-muted" style="font-size: var(--fs-sm); text-align: center; padding: var(--space-md);">No hay vacaciones configuradas</p>'
+                                ? `<p class="text-muted" style="font-size: var(--fs-sm); text-align: center; padding: var(--space-md);">${t('No hay vacaciones configuradas')}</p>`
                                 : (config.vacations || []).map(vac => `
                                     <div class="block-item">
                                         <div class="block-item-info">
@@ -156,37 +160,37 @@ export const Schedule = (() => {
             }
         }
         Storage.updateScheduleConfig(config);
-        App.showToast('success', 'Guardado', 'Horarios actualizados');
+        App.showToast('success', t('Guardado'), t('Horarios actualizados'));
     }
 
     function updateSlotDuration(value) {
         Storage.updateScheduleConfig({ slotDuration: parseInt(value) });
-        App.showToast('success', 'Guardado', 'Duración de slots actualizada');
+        App.showToast('success', t('Guardado'), t('Duración de slots actualizada'));
     }
 
     function showAddBlockModal() {
         App.showModal(`
             <div class="modal-header">
-                <h3 class="modal-title">Añadir bloqueo</h3>
-                <button class="modal-close" onclick="App.closeModal()">
+                <h3 class="modal-title">${t('Añadir bloqueo')}</h3>
+                <button class="modal-close" onclick="App.closeModal()" aria-label="${t('Cerrar')}">
                     <i data-lucide="x"></i>
                 </button>
             </div>
             <div class="modal-body">
                 <form id="blockForm" onsubmit="Schedule.saveBlock(event)">
                     <div class="form-group">
-                        <label class="form-label">Fecha</label>
+                        <label class="form-label" for="blockDate">${t('Fecha')}</label>
                         <input type="date" id="blockDate" class="form-input" required
                             min="${new Date().toISOString().split('T')[0]}">
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Motivo (opcional)</label>
-                        <input type="text" id="blockReason" class="form-input" placeholder="Ej: Reunión, formación...">
+                        <label class="form-label" for="blockReason">${t('Motivo (opcional)')}</label>
+                        <input type="text" id="blockReason" class="form-input" placeholder="${t('Ej: Reunión, formación...')}">
                     </div>
                     <div class="modal-footer" style="padding: var(--space-md) 0 0; border-top: none;">
-                        <button type="button" class="btn btn-secondary" onclick="App.closeModal()">Cancelar</button>
+                        <button type="button" class="btn btn-secondary" onclick="App.closeModal()">${t('Cancelar')}</button>
                         <button type="submit" class="btn btn-primary">
-                            <i data-lucide="lock"></i> Bloquear día
+                            <i data-lucide="lock"></i> ${t('Bloquear día')}
                         </button>
                     </div>
                 </form>
@@ -200,27 +204,27 @@ export const Schedule = (() => {
         const reason = Security.sanitizeString(document.getElementById('blockReason').value, 150);
 
         if (!Security.validateDate(date)) {
-            App.showToast('error', 'Error', 'Fecha no válida');
+            App.showToast('error', t('Error'), t('Fecha no válida'));
             return;
         }
 
         Storage.addBlock({ date, reason });
         App.closeModal();
-        App.showToast('success', 'Bloqueado', `El día ${_formatDate(date)} ha sido bloqueado`);
+        App.showToast('success', t('Bloqueado'), t('El día {date} ha sido bloqueado', { date: _formatDate(date) }));
         App.renderPage();
     }
 
     function removeBlock(blockId) {
         Storage.removeBlock(blockId);
-        App.showToast('info', 'Eliminado', 'El bloqueo ha sido eliminado');
+        App.showToast('info', t('Eliminado'), t('El bloqueo ha sido eliminado'));
         App.renderPage();
     }
 
     function showAddVacationModal() {
         App.showModal(`
             <div class="modal-header">
-                <h3 class="modal-title">Añadir vacaciones</h3>
-                <button class="modal-close" onclick="App.closeModal()">
+                <h3 class="modal-title">${t('Añadir vacaciones')}</h3>
+                <button class="modal-close" onclick="App.closeModal()" aria-label="${t('Cerrar')}">
                     <i data-lucide="x"></i>
                 </button>
             </div>
@@ -228,23 +232,23 @@ export const Schedule = (() => {
                 <form id="vacationForm" onsubmit="Schedule.saveVacation(event)">
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-md);">
                         <div class="form-group">
-                            <label class="form-label">Fecha inicio</label>
+                            <label class="form-label" for="vacStart">${t('Fecha inicio')}</label>
                             <input type="date" id="vacStart" class="form-input" required
                                 min="${new Date().toISOString().split('T')[0]}">
                         </div>
                         <div class="form-group">
-                            <label class="form-label">Fecha fin</label>
+                            <label class="form-label" for="vacEnd">${t('Fecha fin')}</label>
                             <input type="date" id="vacEnd" class="form-input" required>
                         </div>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Motivo (opcional)</label>
-                        <input type="text" id="vacReason" class="form-input" placeholder="Ej: Vacaciones de verano">
+                        <label class="form-label" for="vacReason">${t('Motivo (opcional)')}</label>
+                        <input type="text" id="vacReason" class="form-input" placeholder="${t('Ej: Vacaciones de verano')}">
                     </div>
                     <div class="modal-footer" style="padding: var(--space-md) 0 0; border-top: none;">
-                        <button type="button" class="btn btn-secondary" onclick="App.closeModal()">Cancelar</button>
+                        <button type="button" class="btn btn-secondary" onclick="App.closeModal()">${t('Cancelar')}</button>
                         <button type="submit" class="btn btn-primary">
-                            <i data-lucide="palmtree"></i> Guardar vacaciones
+                            <i data-lucide="palmtree"></i> ${t('Guardar vacaciones')}
                         </button>
                     </div>
                 </form>
@@ -259,26 +263,26 @@ export const Schedule = (() => {
         const reason = Security.sanitizeString(document.getElementById('vacReason').value, 150);
 
         if (endDate < startDate) {
-            App.showToast('error', 'Error', 'La fecha de fin debe ser posterior a la de inicio');
+            App.showToast('error', t('Error'), t('La fecha de fin debe ser posterior a la de inicio'));
             return;
         }
 
         Storage.addVacation({ startDate, endDate, reason });
         App.closeModal();
-        App.showToast('success', 'Guardado', 'Las vacaciones han sido registradas');
+        App.showToast('success', t('Guardado'), t('Las vacaciones han sido registradas'));
         App.renderPage();
     }
 
     function removeVacation(vacationId) {
         Storage.removeVacation(vacationId);
-        App.showToast('info', 'Eliminado', 'Las vacaciones han sido eliminadas');
+        App.showToast('info', t('Eliminado'), t('Las vacaciones han sido eliminadas'));
         App.renderPage();
     }
 
     // ── Helpers ──
     function _formatDate(dateStr) {
         const d = new Date(dateStr + 'T12:00:00');
-        const months = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+        const months = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'].map(t);
         return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
     }
 

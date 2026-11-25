@@ -5,6 +5,7 @@
 import { Storage } from './storage.js';
 import { Security } from './security.js';
 import { App } from './app.js';
+import { t } from './i18n.js';
 
 export const History = (() => {
     let currentFilter = 'all';
@@ -31,23 +32,23 @@ export const History = (() => {
         return `
         <div class="animate-fade-in-up">
             <div class="page-header">
-                <h1 class="page-title">Historial de citas</h1>
-                <p class="page-subtitle">Revisa tus citas pasadas y pendientes</p>
+                <h1 class="page-title">${t('Historial de citas')}</h1>
+                <p class="page-subtitle">${t('Revisa tus citas pasadas y pendientes')}</p>
             </div>
 
             <!-- Filters -->
             <div class="history-filters">
                 <button class="history-filter ${currentFilter === 'all' ? 'active' : ''}" onclick="History.setFilter('all')">
-                    Todas (${counts.all})
+                    ${t('Todas')} (${counts.all})
                 </button>
                 <button class="history-filter ${currentFilter === 'pending' ? 'active' : ''}" onclick="History.setFilter('pending')">
-                    Pendientes (${counts.pending})
+                    ${t('Pendientes')} (${counts.pending})
                 </button>
                 <button class="history-filter ${currentFilter === 'completed' ? 'active' : ''}" onclick="History.setFilter('completed')">
-                    Completadas (${counts.completed})
+                    ${t('Completadas')} (${counts.completed})
                 </button>
                 <button class="history-filter ${currentFilter === 'cancelled' ? 'active' : ''}" onclick="History.setFilter('cancelled')">
-                    Canceladas (${counts.cancelled})
+                    ${t('Canceladas')} (${counts.cancelled})
                 </button>
             </div>
 
@@ -56,10 +57,10 @@ export const History = (() => {
                 ${filtered.length === 0
                     ? `<div class="empty-state">
                         <i data-lucide="calendar-x"></i>
-                        <h3>No hay citas</h3>
-                        <p>${currentFilter === 'all' ? 'Aún no tienes ninguna cita registrada' : 'No hay citas con este estado'}</p>
+                        <h3>${t('No hay citas')}</h3>
+                        <p>${currentFilter === 'all' ? t('Aún no tienes ninguna cita registrada') : t('No hay citas con este estado')}</p>
                         <button class="btn btn-primary" onclick="App.navigate('booking')">
-                            <i data-lucide="plus"></i> Reservar cita
+                            <i data-lucide="plus"></i> ${t('Reservar cita')}
                         </button>
                     </div>`
                     : filtered.map((appt, index) => _renderAppointmentCard(appt, index)).join('')
@@ -74,8 +75,8 @@ export const History = (() => {
         const service = Storage.Services.getById(appt.serviceId);
         const dateObj = new Date(appt.date + 'T12:00:00');
         const monthNames = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun',
-            'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
-        const dayNames = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+            'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'].map(t);
+        const dayNames = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'].map(t);
 
         const today = new Date().toISOString().split('T')[0];
         const isFuture = appt.date >= today;
@@ -83,9 +84,9 @@ export const History = (() => {
         const canModify = isPending && isFuture;
 
         const statusBadge = {
-            pending: '<span class="badge badge-warning">Pendiente</span>',
-            completed: '<span class="badge badge-success">Completada</span>',
-            cancelled: '<span class="badge badge-error">Cancelada</span>'
+            pending: `<span class="badge badge-warning">${t('Pendiente')}</span>`,
+            completed: `<span class="badge badge-success">${t('Completada')}</span>`,
+            cancelled: `<span class="badge badge-error">${t('Cancelada')}</span>`
         };
 
         return `
@@ -95,8 +96,8 @@ export const History = (() => {
                 <div class="month">${monthNames[dateObj.getMonth()]}</div>
             </div>
             <div class="history-card-info">
-                <h4>${service ? Security.escapeHTML(service.name) : 'Servicio'}</h4>
-                <p>${dayNames[dateObj.getDay()]} a las ${appt.time} h ${service ? `· ${service.duration} min` : ''}</p>
+                <h4>${service ? Security.escapeHTML(service.name) : t('Servicio')}</h4>
+                <p>${dayNames[dateObj.getDay()]} ${t('a las {time} h', { time: appt.time })} ${service ? `· ${service.duration} min` : ''}</p>
                 <div style="margin-top: var(--space-xs);">
                     ${statusBadge[appt.status] || ''}
                     ${service ? `<span class="badge badge-accent" style="margin-left: 4px;">${service.price}€</span>` : ''}
@@ -106,11 +107,11 @@ export const History = (() => {
                 ${canModify ? `
                     <button class="btn btn-secondary btn-sm" onclick="History.modifyAppointment('${appt.id}')">
                         <i data-lucide="edit-2"></i>
-                        <span class="hide-mobile">Modificar</span>
+                        <span class="hide-mobile">${t('Modificar')}</span>
                     </button>
                     <button class="btn btn-danger btn-sm" onclick="History.cancelAppointment('${appt.id}')">
                         <i data-lucide="x"></i>
-                        <span class="hide-mobile">Cancelar</span>
+                        <span class="hide-mobile">${t('Cancelar')}</span>
                     </button>
                 ` : ''}
             </div>
@@ -127,8 +128,8 @@ export const History = (() => {
     function cancelAppointment(apptId) {
         App.showModal(`
             <div class="modal-header">
-                <h3 class="modal-title">Cancelar cita</h3>
-                <button class="modal-close" onclick="App.closeModal()">
+                <h3 class="modal-title">${t('Cancelar cita')}</h3>
+                <button class="modal-close" onclick="App.closeModal()" aria-label="${t('Cerrar')}">
                     <i data-lucide="x"></i>
                 </button>
             </div>
@@ -136,13 +137,13 @@ export const History = (() => {
                 <div class="confirm-icon confirm-icon-warning" style="margin: 0 auto var(--space-md);">
                     <i data-lucide="alert-triangle"></i>
                 </div>
-                <h3 style="margin-bottom: var(--space-sm);">¿Estás seguro?</h3>
-                <p class="confirm-message">Esta acción cancelará tu cita. No se puede deshacer.</p>
+                <h3 style="margin-bottom: var(--space-sm);">${t('¿Estás seguro?')}</h3>
+                <p class="confirm-message">${t('Esta acción cancelará tu cita. No se puede deshacer.')}</p>
             </div>
             <div class="modal-footer" style="justify-content: center;">
-                <button class="btn btn-secondary" onclick="App.closeModal()">No, volver</button>
+                <button class="btn btn-secondary" onclick="App.closeModal()">${t('No, volver')}</button>
                 <button class="btn btn-danger" onclick="History.confirmCancel('${apptId}')">
-                    <i data-lucide="x"></i> Sí, cancelar
+                    <i data-lucide="x"></i> ${t('Sí, cancelar')}
                 </button>
             </div>
         `);
@@ -154,14 +155,14 @@ export const History = (() => {
 
         // Security check: ensure user owns the appointment or is admin
         if (!appt || (appt.userId !== user.id && !Storage.Session.isAdmin())) {
-            App.showToast('error', 'Error', 'No tienes autorización para cancelar esta cita');
+            App.showToast('error', t('Error'), t('No tienes autorización para cancelar esta cita'));
             App.closeModal();
             return;
         }
 
         Storage.Appointments.cancel(apptId);
         App.closeModal();
-        App.showToast('info', 'Cita cancelada', 'Tu cita ha sido cancelada correctamente');
+        App.showToast('info', t('Cita cancelada'), t('Tu cita ha sido cancelada correctamente'));
         App.renderPage();
     }
 
@@ -171,7 +172,7 @@ export const History = (() => {
 
         // Cancel the current and redirect to booking with pre-selected service
         Storage.Appointments.cancel(apptId);
-        App.showToast('info', 'Cita cancelada', 'Reserva una nueva cita con los datos que prefieras');
+        App.showToast('info', t('Cita cancelada'), t('Reserva una nueva cita con los datos que prefieras'));
         App.navigate('booking');
     }
 

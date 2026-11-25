@@ -7,6 +7,7 @@ import { renderIcons } from './icons.js';
 import { Storage } from './storage.js';
 import { Security } from './security.js';
 import { App } from './app.js';
+import { t } from './i18n.js';
 
 export const Admin = (() => {
     let agendaDate = new Date().toISOString().split('T')[0];
@@ -42,8 +43,10 @@ export const Admin = (() => {
             if (svc) monthRevenue += svc.price;
         });
 
-        // Chart data (appointments per day this week)
-        const dayLabels = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+        // Chart data (appointments per day this week) — abbreviations derived from the
+        // full (translated) day name so "Mar" (Tue) never collides with "Mar" (March).
+        const dayLabels = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']
+            .map(d => t(d).slice(0, 3));
         const dayCounts = [0, 0, 0, 0, 0, 0, 0];
         weekAppts.forEach(a => {
             const d = new Date(a.date + 'T12:00:00');
@@ -55,8 +58,8 @@ export const Admin = (() => {
         return `
         <div class="animate-fade-in-up">
             <div class="page-header">
-                <h1 class="page-title">Dashboard</h1>
-                <p class="page-subtitle">Resumen de tu barbería</p>
+                <h1 class="page-title">${t('Dashboard')}</h1>
+                <p class="page-subtitle">${t('Resumen de tu barbería')}</p>
             </div>
 
             <!-- Stats -->
@@ -67,7 +70,7 @@ export const Admin = (() => {
                     </div>
                     <div class="stat-content">
                         <div class="stat-value">${todayAppts.length}</div>
-                        <div class="stat-label">Citas hoy</div>
+                        <div class="stat-label">${t('Citas hoy')}</div>
                     </div>
                 </div>
                 <div class="stat-card">
@@ -76,7 +79,7 @@ export const Admin = (() => {
                     </div>
                     <div class="stat-content">
                         <div class="stat-value">${weekAppts.length}</div>
-                        <div class="stat-label">Esta semana</div>
+                        <div class="stat-label">${t('Esta semana')}</div>
                     </div>
                 </div>
                 <div class="stat-card">
@@ -85,7 +88,7 @@ export const Admin = (() => {
                     </div>
                     <div class="stat-content">
                         <div class="stat-value">${clients.length}</div>
-                        <div class="stat-label">Clientes</div>
+                        <div class="stat-label">${t('Clientes')}</div>
                     </div>
                 </div>
                 <div class="stat-card">
@@ -94,7 +97,7 @@ export const Admin = (() => {
                     </div>
                     <div class="stat-content">
                         <div class="stat-value">${monthRevenue}€</div>
-                        <div class="stat-label">Ingresos mes</div>
+                        <div class="stat-label">${t('Ingresos mes')}</div>
                     </div>
                 </div>
             </div>
@@ -102,7 +105,7 @@ export const Admin = (() => {
             <!-- Charts & Today -->
             <div class="dashboard-charts">
                 <div class="chart-card">
-                    <div class="chart-title">Citas esta semana</div>
+                    <div class="chart-title">${t('Citas esta semana')}</div>
                     <div class="bar-chart">
                         ${dayLabels.map((label, i) => `
                             <div class="bar-chart-item">
@@ -115,10 +118,10 @@ export const Admin = (() => {
                 </div>
                 <div class="today-appointments">
                     <div class="chart-title">
-                        Hoy, ${_formatDateFull(today)}
+                        ${t('Hoy, {date}', { date: _formatDateFull(today) })}
                     </div>
                     ${todayAppts.length === 0
-                        ? '<p class="text-muted" style="text-align:center; padding: var(--space-xl); font-size: var(--fs-sm);">No hay citas programadas para hoy</p>'
+                        ? `<p class="text-muted" style="text-align:center; padding: var(--space-xl); font-size: var(--fs-sm);">${t('No hay citas programadas para hoy')}</p>`
                         : todayAppts.map(appt => {
                             const svc = Storage.Services.getById(appt.serviceId);
                             const user = Storage.Users.getById(appt.userId);
@@ -126,10 +129,10 @@ export const Admin = (() => {
                             <div class="today-appointment-item" onclick="Admin.viewAppointment('${appt.id}')">
                                 <div class="today-appointment-time">${appt.time}</div>
                                 <div class="today-appointment-info">
-                                    <h4>${user ? Security.escapeHTML(user.name) : 'Cliente'}</h4>
-                                    <p>${svc ? Security.escapeHTML(svc.name) : 'Servicio'}</p>
+                                    <h4>${user ? Security.escapeHTML(user.name) : t('Cliente')}</h4>
+                                    <p>${svc ? Security.escapeHTML(svc.name) : t('Servicio')}</p>
                                 </div>
-                                <span class="badge badge-warning">Pendiente</span>
+                                <span class="badge badge-warning">${t('Pendiente')}</span>
                             </div>
                             `;
                         }).join('')
@@ -140,13 +143,13 @@ export const Admin = (() => {
             <!-- Quick Actions -->
             <div style="display: flex; gap: var(--space-md); flex-wrap: wrap;">
                 <button class="btn btn-secondary" onclick="App.navigate('agenda')">
-                    <i data-lucide="calendar"></i> Ver agenda completa
+                    <i data-lucide="calendar"></i> ${t('Ver agenda completa')}
                 </button>
                 <button class="btn btn-secondary" onclick="App.navigate('admin-services')">
-                    <i data-lucide="scissors"></i> Gestionar servicios
+                    <i data-lucide="scissors"></i> ${t('Gestionar servicios')}
                 </button>
                 <button class="btn btn-secondary" onclick="App.navigate('schedule')">
-                    <i data-lucide="clock"></i> Configurar horarios
+                    <i data-lucide="clock"></i> ${t('Configurar horarios')}
                 </button>
             </div>
         </div>
@@ -159,17 +162,17 @@ export const Admin = (() => {
         <div class="animate-fade-in-up">
             <div class="page-header" style="display: flex; justify-content: space-between; align-items: flex-start;">
                 <div>
-                    <h1 class="page-title">Agenda</h1>
-                    <p class="page-subtitle">Gestiona todas las citas</p>
+                    <h1 class="page-title">${t('Agenda')}</h1>
+                    <p class="page-subtitle">${t('Gestiona todas las citas')}</p>
                 </div>
                 <div class="agenda-view-toggle">
                     <button class="btn ${agendaView === 'day' ? 'btn-primary' : 'btn-secondary'} btn-sm"
                         onclick="Admin.setAgendaView('day')">
-                        <i data-lucide="list"></i> Día
+                        <i data-lucide="list"></i> ${t('Día')}
                     </button>
                     <button class="btn ${agendaView === 'month' ? 'btn-primary' : 'btn-secondary'} btn-sm"
                         onclick="Admin.setAgendaView('month')">
-                        <i data-lucide="grid-3x3"></i> Mes
+                        <i data-lucide="grid-3x3"></i> ${t('Mes')}
                     </button>
                 </div>
             </div>
@@ -206,15 +209,15 @@ export const Admin = (() => {
                     <i data-lucide="chevron-right"></i>
                 </button>
                 <button class="btn btn-ghost btn-sm" onclick="Admin.goToToday()" style="margin-left: var(--space-sm);">
-                    Hoy
+                    ${t('Hoy')}
                 </button>
             </div>
 
-            ${Storage.isDateBlocked(agendaDate) 
+            ${Storage.isDateBlocked(agendaDate)
                 ? `<div class="card text-center" style="padding: var(--space-2xl);">
                     <i data-lucide="lock" style="width:48px; height:48px; color: var(--text-muted); margin: 0 auto var(--space-md);"></i>
-                    <h3 style="color: var(--text-secondary);">Día bloqueado</h3>
-                    <p class="text-muted">Este día no está disponible para citas</p>
+                    <h3 style="color: var(--text-secondary);">${t('Día bloqueado')}</h3>
+                    <p class="text-muted">${t('Este día no está disponible para citas')}</p>
                 </div>`
                 : `<div class="agenda-day-view">
                     ${slots.map(slot => {
@@ -226,7 +229,7 @@ export const Admin = (() => {
                                 <div class="agenda-slot-time">${slot.time}</div>
                                 <div class="agenda-slot-content" onclick="Admin.viewAppointment('${slot.appointment.id}')">
                                     <div class="agenda-slot-appointment">
-                                        <h4>${user ? Security.escapeHTML(user.name) : 'Cliente'}</h4>
+                                        <h4>${user ? Security.escapeHTML(user.name) : t('Cliente')}</h4>
                                         <p>${svc ? `${Security.escapeHTML(svc.name)} · ${svc.duration} min` : ''}</p>
                                     </div>
                                 </div>
@@ -236,7 +239,7 @@ export const Admin = (() => {
                         <div class="agenda-slot">
                             <div class="agenda-slot-time">${slot.time}</div>
                             <div class="agenda-slot-content">
-                                <span class="text-muted" style="font-size: var(--fs-xs);">Disponible</span>
+                                <span class="text-muted" style="font-size: var(--fs-xs);">${t('Disponible')}</span>
                             </div>
                         </div>`;
                     }).join('')}
@@ -254,8 +257,8 @@ export const Admin = (() => {
         const startDay = firstDay.getDay();
 
         const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-            'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-        const weekDays = ['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sá'];
+            'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'].map(t);
+        const weekDays = ['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sá'].map(t);
 
         // Get all appointments for this month
         const monthStart = `${year}-${String(month + 1).padStart(2, '0')}-01`;
@@ -283,7 +286,7 @@ export const Admin = (() => {
             const isBlocked = Storage.isDateBlocked(dateStr);
 
             days += `<div class="calendar-day ${isToday ? 'today' : ''} ${isBlocked ? 'disabled' : ''} ${count > 0 ? 'has-appointments' : ''}"
-                style="cursor: pointer; flex-direction: column;" 
+                style="cursor: pointer; flex-direction: column;"
                 onclick="Admin.goToAgendaDay('${dateStr}')">
                 <span>${d}</span>
                 ${count > 0 ? `<span style="font-size: 9px; color: var(--accent); font-weight: 600;">${count}</span>` : ''}
@@ -326,14 +329,14 @@ export const Admin = (() => {
         return `
         <div class="animate-fade-in-up">
             <div class="page-header">
-                <h1 class="page-title">Clientes</h1>
-                <p class="page-subtitle">${Storage.Users.getClients().length} clientes registrados</p>
+                <h1 class="page-title">${t('Clientes')}</h1>
+                <p class="page-subtitle">${t('{count} clientes registrados', { count: Storage.Users.getClients().length })}</p>
             </div>
 
             <div class="clients-search">
                 <div class="form-input-icon">
-                    <input type="text" class="form-input" placeholder="Buscar por nombre, email o teléfono..."
-                        value="${clientSearch}" oninput="Admin.searchClients(this.value)">
+                    <input type="text" class="form-input" placeholder="${t('Buscar por nombre, email o teléfono...')}"
+                        value="${Security.escapeHTML(clientSearch)}" oninput="Admin.searchClients(this.value)">
                     <i data-lucide="search"></i>
                 </div>
             </div>
@@ -342,8 +345,8 @@ export const Admin = (() => {
                 ${clients.length === 0
                     ? `<div class="empty-state">
                         <i data-lucide="users"></i>
-                        <h3>No hay clientes</h3>
-                        <p>${clientSearch ? 'No se encontraron resultados' : 'Los clientes aparecerán aquí al registrarse'}</p>
+                        <h3>${t('No hay clientes')}</h3>
+                        <p>${clientSearch ? t('No se encontraron resultados') : t('Los clientes aparecerán aquí al registrarse')}</p>
                     </div>`
                     : clients.map(client => {
                         const appts = Storage.Appointments.getByUser(client.id);
@@ -352,15 +355,15 @@ export const Admin = (() => {
                         return `
                         <div class="client-list-item" onclick="Admin.viewClient('${client.id}')">
                             <div class="avatar">
-                                ${client.avatar ? `<img src="${Security.escapeHTML(client.avatar)}" alt="">` : _getInitials(client.name)}
+                                ${client.avatar && Security.isSafeImageDataUrl(client.avatar) ? `<img src="${client.avatar}" alt="">` : _getInitials(client.name)}
                             </div>
                             <div class="client-info">
                                 <h4>${Security.escapeHTML(client.name)}</h4>
                                 <p>${Security.escapeHTML(client.email)} ${client.phone ? `· ${Security.escapeHTML(client.phone)}` : ''}</p>
                             </div>
                             <div class="client-meta">
-                                <div class="visits">${completed} visita${completed !== 1 ? 's' : ''}</div>
-                                <div class="last-visit">${lastAppt ? `Última: ${_formatDateShort(lastAppt.date)}` : 'Sin visitas'}</div>
+                                <div class="visits">${completed} ${completed !== 1 ? t('visitas') : t('visita')}</div>
+                                <div class="last-visit">${lastAppt ? t('Última: {date}', { date: _formatDateShort(lastAppt.date) }) : t('Sin visitas')}</div>
                             </div>
                         </div>
                         `;
@@ -379,43 +382,43 @@ export const Admin = (() => {
         return `
         <div class="animate-fade-in-up">
             <div class="page-header">
-                <h1 class="page-title">Ajustes</h1>
-                <p class="page-subtitle">Configuración general de la barbería</p>
+                <h1 class="page-title">${t('Ajustes')}</h1>
+                <p class="page-subtitle">${t('Configuración general de la barbería')}</p>
             </div>
 
             <div class="settings-sections">
                 <div class="settings-section">
-                    <h3>Información de la barbería</h3>
+                    <h3>${t('Información de la barbería')}</h3>
                     <form onsubmit="Admin.saveSettings(event)">
                         <div class="form-group">
-                            <label class="form-label">Nombre del negocio</label>
+                            <label class="form-label" for="setShopName">${t('Nombre del negocio')}</label>
                             <input type="text" id="setShopName" class="form-input" value="${Security.escapeHTML(settings.shopName || '')}">
                         </div>
                         <div class="form-group">
-                            <label class="form-label">Dirección</label>
+                            <label class="form-label" for="setAddress">${t('Dirección')}</label>
                             <input type="text" id="setAddress" class="form-input" value="${Security.escapeHTML(settings.address || '')}">
                         </div>
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-md);">
                             <div class="form-group">
-                                <label class="form-label">Teléfono</label>
+                                <label class="form-label" for="setPhone">${t('Teléfono')}</label>
                                 <input type="tel" id="setPhone" class="form-input" value="${Security.escapeHTML(settings.phone || '')}">
                             </div>
                             <div class="form-group">
-                                <label class="form-label">Email</label>
+                                <label class="form-label" for="setEmail">${t('Email')}</label>
                                 <input type="email" id="setEmail" class="form-input" value="${Security.escapeHTML(settings.email || '')}">
                             </div>
                         </div>
                         <div class="form-group">
-                            <label class="form-label">Instagram</label>
+                            <label class="form-label" for="setInstagram">${t('Instagram')}</label>
                             <input type="text" id="setInstagram" class="form-input" value="${Security.escapeHTML(settings.instagram || '')}">
                         </div>
                         <div class="form-group">
-                            <label class="form-label">Descripción</label>
+                            <label class="form-label" for="setDescription">${t('Descripción')}</label>
                             <textarea id="setDescription" class="form-textarea" rows="3">${Security.escapeHTML(settings.description || '')}</textarea>
                         </div>
                         <div style="display: flex; justify-content: flex-end;">
                             <button type="submit" class="btn btn-primary">
-                                <i data-lucide="save"></i> Guardar cambios
+                                <i data-lucide="save"></i> ${t('Guardar cambios')}
                             </button>
                         </div>
                     </form>
@@ -423,10 +426,10 @@ export const Admin = (() => {
 
                 <div class="settings-section">
                     <div class="card-header" style="margin-bottom: var(--space-xs);">
-                        <h3>Marketing & Código QR</h3>
+                        <h3>${t('Marketing & Código QR')}</h3>
                     </div>
                     <p class="text-secondary" style="font-size: var(--fs-sm); margin-bottom: var(--space-lg);">
-                        Genera el código QR oficial de tu barbería para colocar en el mostrador, espejos de corte o tarjetas de visita.
+                        ${t('Genera el código QR oficial de tu barbería para colocar en el mostrador, espejos de corte o tarjetas de visita.')}
                     </p>
 
                     <div style="display: flex; gap: var(--space-xl); align-items: center; background: var(--bg-secondary); padding: var(--space-lg); border-radius: var(--radius-lg); border: 1px solid var(--border-color); flex-wrap: wrap;">
@@ -435,19 +438,19 @@ export const Admin = (() => {
                         </div>
                         <div style="flex: 1; min-width: 250px;">
                             <div class="form-group">
-                                <label class="form-label">Enlace de la app (URL)</label>
+                                <label class="form-label" for="qrAppUrl">${t('Enlace de la app (URL)')}</label>
                                 <div class="form-input-icon">
                                     <input type="url" id="qrAppUrl" class="form-input" value="${Security.escapeHTML(window.location.origin + window.location.pathname)}" oninput="Admin.updateQRCode(this.value)">
                                     <i data-lucide="link"></i>
                                 </div>
-                                <span class="form-hint">URL a la que se dirigirá al cliente al escanear</span>
+                                <span class="form-hint">${t('URL a la que se dirigirá al cliente al escanear')}</span>
                             </div>
                             <div style="display: flex; gap: var(--space-md); flex-wrap: wrap;">
                                 <button class="btn btn-primary btn-sm" onclick="Admin.downloadQRCode()">
-                                    <i data-lucide="download"></i> Descargar QR (PNG)
+                                    <i data-lucide="download"></i> ${t('Descargar QR (PNG)')}
                                 </button>
                                 <button class="btn btn-secondary btn-sm" onclick="Admin.printCounterCard()">
-                                    <i data-lucide="printer"></i> Cartel de mostrador
+                                    <i data-lucide="printer"></i> ${t('Cartel de mostrador')}
                                 </button>
                             </div>
                         </div>
@@ -455,13 +458,13 @@ export const Admin = (() => {
                 </div>
 
                 <div class="settings-section">
-                    <h3>Datos y mantenimiento</h3>
+                    <h3>${t('Datos y mantenimiento')}</h3>
                     <p class="text-secondary" style="font-size: var(--fs-sm); margin-bottom: var(--space-md);">
-                        Acciones sobre los datos almacenados en el navegador.
+                        ${t('Acciones sobre los datos almacenados en el navegador.')}
                     </p>
                     <div style="display: flex; gap: var(--space-md);">
                         <button class="btn btn-danger btn-sm" onclick="Admin.resetAllData()">
-                            <i data-lucide="trash-2"></i> Restablecer datos demo
+                            <i data-lucide="trash-2"></i> ${t('Restablecer datos demo')}
                         </button>
                     </div>
                 </div>
@@ -477,13 +480,13 @@ export const Admin = (() => {
         const svc = Storage.Services.getById(appt.serviceId);
         const user = Storage.Users.getById(appt.userId);
 
-        const statusLabels = { pending: 'Pendiente', completed: 'Completada', cancelled: 'Cancelada' };
+        const statusLabels = { pending: t('Pendiente'), completed: t('Completada'), cancelled: t('Cancelada') };
         const statusBadges = { pending: 'badge-warning', completed: 'badge-success', cancelled: 'badge-error' };
 
         App.showModal(`
             <div class="modal-header">
-                <h3 class="modal-title">Detalle de cita</h3>
-                <button class="modal-close" onclick="App.closeModal()">
+                <h3 class="modal-title">${t('Detalle de cita')}</h3>
+                <button class="modal-close" onclick="App.closeModal()" aria-label="${t('Cerrar')}">
                     <i data-lucide="x"></i>
                 </button>
             </div>
@@ -493,30 +496,30 @@ export const Admin = (() => {
                         ${user && user.avatar && Security.isSafeImageDataUrl(user.avatar) ? `<img src="${user.avatar}" alt="">` : (user ? _getInitials(user.name) : '?')}
                     </div>
                     <div>
-                        <h4>${user ? Security.escapeHTML(user.name) : 'Cliente desconocido'}</h4>
+                        <h4>${user ? Security.escapeHTML(user.name) : t('Cliente desconocido')}</h4>
                         <p class="text-secondary" style="font-size: var(--fs-sm);">${user ? Security.escapeHTML(user.email) : ''}</p>
                     </div>
                 </div>
                 <div class="booking-summary" style="border: none; padding: 0;">
                     <div class="booking-summary-row">
-                        <span class="booking-summary-label">Servicio</span>
-                        <span class="booking-summary-value">${svc ? svc.name : 'N/A'}</span>
+                        <span class="booking-summary-label">${t('Servicio')}</span>
+                        <span class="booking-summary-value">${svc ? Security.escapeHTML(svc.name) : t('N/A')}</span>
                     </div>
                     <div class="booking-summary-row">
-                        <span class="booking-summary-label">Fecha</span>
+                        <span class="booking-summary-label">${t('Fecha')}</span>
                         <span class="booking-summary-value">${_formatDateFull(appt.date)}</span>
                     </div>
                     <div class="booking-summary-row">
-                        <span class="booking-summary-label">Hora</span>
+                        <span class="booking-summary-label">${t('Hora')}</span>
                         <span class="booking-summary-value">${appt.time} h</span>
                     </div>
                     <div class="booking-summary-row">
-                        <span class="booking-summary-label">Estado</span>
+                        <span class="booking-summary-label">${t('Estado')}</span>
                         <span class="badge ${statusBadges[appt.status]}">${statusLabels[appt.status]}</span>
                     </div>
                     ${svc ? `
                     <div class="booking-summary-row">
-                        <span class="booking-summary-label">Precio</span>
+                        <span class="booking-summary-label">${t('Precio')}</span>
                         <span class="booking-summary-value text-accent">${svc.price}€</span>
                     </div>` : ''}
                 </div>
@@ -524,10 +527,10 @@ export const Admin = (() => {
             ${appt.status === 'pending' ? `
             <div class="modal-footer">
                 <button class="btn btn-danger btn-sm" onclick="Admin.adminCancelAppt('${appt.id}')">
-                    <i data-lucide="x"></i> Cancelar
+                    <i data-lucide="x"></i> ${t('Cancelar')}
                 </button>
                 <button class="btn btn-primary btn-sm" onclick="Admin.adminCompleteAppt('${appt.id}')">
-                    <i data-lucide="check"></i> Completar
+                    <i data-lucide="check"></i> ${t('Completar')}
                 </button>
             </div>` : ''}
         `);
@@ -536,14 +539,14 @@ export const Admin = (() => {
     function adminCancelAppt(apptId) {
         Storage.Appointments.cancel(apptId);
         App.closeModal();
-        App.showToast('info', 'Cancelada', 'La cita ha sido cancelada');
+        App.showToast('info', t('Cancelada'), t('La cita ha sido cancelada'));
         App.renderPage();
     }
 
     function adminCompleteAppt(apptId) {
         Storage.Appointments.complete(apptId);
         App.closeModal();
-        App.showToast('success', 'Completada', 'La cita ha sido marcada como completada');
+        App.showToast('success', t('Completada'), t('La cita ha sido marcada como completada'));
         App.renderPage();
     }
 
@@ -555,13 +558,13 @@ export const Admin = (() => {
             .sort((a, b) => b.date.localeCompare(a.date));
         const gallery = Storage.Gallery.getByUser(clientId);
 
-        const statusLabels = { pending: 'Pendiente', completed: 'Completada', cancelled: 'Cancelada' };
+        const statusLabels = { pending: t('Pendiente'), completed: t('Completada'), cancelled: t('Cancelada') };
         const statusBadges = { pending: 'badge-warning', completed: 'badge-success', cancelled: 'badge-error' };
 
         App.showModal(`
             <div class="modal-header">
-                <h3 class="modal-title">Perfil del cliente</h3>
-                <button class="modal-close" onclick="App.closeModal()">
+                <h3 class="modal-title">${t('Perfil del cliente')}</h3>
+                <button class="modal-close" onclick="App.closeModal()" aria-label="${t('Cerrar')}">
                     <i data-lucide="x"></i>
                 </button>
             </div>
@@ -577,9 +580,9 @@ export const Admin = (() => {
 
                 <div class="divider"></div>
 
-                <h4 style="margin-bottom: var(--space-md);">Historial de citas (${appts.length})</h4>
+                <h4 style="margin-bottom: var(--space-md);">${t('Historial de citas ({count})', { count: appts.length })}</h4>
                 ${appts.length === 0
-                    ? '<p class="text-muted" style="font-size: var(--fs-sm);">Sin citas registradas</p>'
+                    ? `<p class="text-muted" style="font-size: var(--fs-sm);">${t('Sin citas registradas')}</p>`
                     : `<div style="max-height: 250px; overflow-y: auto;">
                         ${appts.slice(0, 10).map(a => {
                             const svc = Storage.Services.getById(a.serviceId);
@@ -587,7 +590,7 @@ export const Admin = (() => {
                             <div style="display: flex; justify-content: space-between; align-items: center; padding: var(--space-sm) 0; border-bottom: 1px solid var(--border-color); font-size: var(--fs-sm);">
                                 <div>
                                     <span>${_formatDateShort(a.date)}</span>
-                                    <span class="text-muted"> — ${svc ? svc.name : 'N/A'} — ${a.time}</span>
+                                    <span class="text-muted"> — ${svc ? Security.escapeHTML(svc.name) : t('N/A')} — ${a.time}</span>
                                 </div>
                                 <span class="badge ${statusBadges[a.status]}">${statusLabels[a.status]}</span>
                             </div>`;
@@ -597,7 +600,7 @@ export const Admin = (() => {
 
                 ${gallery.length > 0 ? `
                 <div class="divider"></div>
-                <h4 style="margin-bottom: var(--space-md);">Galería (${gallery.length})</h4>
+                <h4 style="margin-bottom: var(--space-md);">${t('Galería ({count})', { count: gallery.length })}</h4>
                 <div style="display: flex; gap: var(--space-sm); flex-wrap: wrap;">
                     ${gallery.filter(g => Security.isSafeImageDataUrl(g.imageData)).map(g => `
                         <img src="${g.imageData}" alt="" style="width: 60px; height: 60px; object-fit: cover; border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
@@ -655,14 +658,14 @@ export const Admin = (() => {
             instagram: Security.sanitizeString(document.getElementById('setInstagram').value, 100),
             description: Security.sanitizeString(document.getElementById('setDescription').value, 500)
         });
-        App.showToast('success', 'Guardado', 'Los ajustes han sido actualizados');
+        App.showToast('success', t('Guardado'), t('Los ajustes han sido actualizados'));
     }
 
     function resetAllData() {
         App.showModal(`
             <div class="modal-header">
-                <h3 class="modal-title">Restablecer datos</h3>
-                <button class="modal-close" onclick="App.closeModal()">
+                <h3 class="modal-title">${t('Restablecer datos')}</h3>
+                <button class="modal-close" onclick="App.closeModal()" aria-label="${t('Cerrar')}">
                     <i data-lucide="x"></i>
                 </button>
             </div>
@@ -670,13 +673,13 @@ export const Admin = (() => {
                 <div class="confirm-icon confirm-icon-danger" style="margin: 0 auto var(--space-md);">
                     <i data-lucide="alert-triangle"></i>
                 </div>
-                <h3 style="margin-bottom: var(--space-sm);">¿Restablecer todo?</h3>
-                <p class="confirm-message">Se borrarán todos los datos y se cargarán los datos demo. Esta acción no se puede deshacer.</p>
+                <h3 style="margin-bottom: var(--space-sm);">${t('¿Restablecer todo?')}</h3>
+                <p class="confirm-message">${t('Se borrarán todos los datos y se cargarán los datos demo. Esta acción no se puede deshacer.')}</p>
             </div>
             <div class="modal-footer" style="justify-content: center;">
-                <button class="btn btn-secondary" onclick="App.closeModal()">Cancelar</button>
+                <button class="btn btn-secondary" onclick="App.closeModal()">${t('Cancelar')}</button>
                 <button class="btn btn-danger" onclick="Admin.confirmReset()">
-                    <i data-lucide="refresh-cw"></i> Restablecer
+                    <i data-lucide="refresh-cw"></i> ${t('Restablecer')}
                 </button>
             </div>
         `);
@@ -686,7 +689,7 @@ export const Admin = (() => {
         localStorage.clear();
         Storage.seedDemoData();
         App.closeModal();
-        App.showToast('success', 'Restablecido', 'Los datos han sido restablecidos');
+        App.showToast('success', t('Restablecido'), t('Los datos han sido restablecidos'));
         Storage.Session.clear();
         App.navigate('login');
     }
@@ -698,15 +701,19 @@ export const Admin = (() => {
 
     function _formatDateFull(dateStr) {
         const d = new Date(dateStr + 'T12:00:00');
-        const dayNames = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+        const dayNames = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'].map(t);
         const monthNames = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
-            'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
-        return `${dayNames[d.getDay()]}, ${d.getDate()} de ${monthNames[d.getMonth()]}`;
+            'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'].map(t);
+        return t('{day}, {d} de {month}', {
+            day: dayNames[d.getDay()],
+            d: d.getDate(),
+            month: monthNames[d.getMonth()]
+        });
     }
 
     function _formatDateShort(dateStr) {
         const d = new Date(dateStr + 'T12:00:00');
-        const months = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+        const months = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'].map(t);
         return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
     }
 
@@ -731,7 +738,7 @@ export const Admin = (() => {
         }, (err) => {
             if (err) {
                 console.error('QR generation error:', err);
-                container.innerHTML = '<p style="font-size:12px; color: var(--text-muted);">No se pudo generar el QR</p>';
+                container.innerHTML = `<p style="font-size:12px; color: var(--text-muted);">${t('No se pudo generar la imagen del QR')}</p>`;
             }
         });
     }
@@ -757,7 +764,7 @@ export const Admin = (() => {
         }
 
         if (!src) {
-            App.showToast('error', 'Error', 'No se pudo generar la imagen del QR');
+            App.showToast('error', t('Error'), t('No se pudo generar la imagen del QR'));
             return;
         }
 
@@ -767,7 +774,7 @@ export const Admin = (() => {
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
-        App.showToast('success', 'Descargado', 'Código QR guardado en tu dispositivo');
+        App.showToast('success', t('Descargado'), t('Código QR guardado en tu dispositivo'));
     }
 
     function printCounterCard() {
@@ -781,8 +788,8 @@ export const Admin = (() => {
 
         App.showModal(`
             <div class="modal-header">
-                <h3 class="modal-title">Cartel de mostrador (Vista previa)</h3>
-                <button class="modal-close" onclick="App.closeModal()">
+                <h3 class="modal-title">${t('Cartel de mostrador (Vista previa)')}</h3>
+                <button class="modal-close" onclick="App.closeModal()" aria-label="${t('Cerrar')}">
                     <i data-lucide="x"></i>
                 </button>
             </div>
@@ -792,14 +799,14 @@ export const Admin = (() => {
                         ${Security.escapeHTML(settings.shopName || 'BarberClub')}
                     </div>
                     <p style="font-size: var(--fs-xs); color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: var(--space-xl);">
-                        Reserva de Citas Online
+                        ${t('Reserva de Citas Online')}
                     </p>
                     <div style="background: #FFFFFF; padding: var(--space-md); border-radius: var(--radius-lg); display: inline-block; box-shadow: var(--shadow-md); margin-bottom: var(--space-lg);">
                         <img src="${qrSrc}" alt="QR" style="width: 160px; height: 160px; display: block; margin: 0 auto;">
                     </div>
-                    <h4 style="font-size: var(--fs-md); margin-bottom: var(--space-xs);">¡Escanea con tu móvil!</h4>
+                    <h4 style="font-size: var(--fs-md); margin-bottom: var(--space-xs);">${t('¡Escanea con tu móvil!')}</h4>
                     <p style="font-size: var(--fs-xs); color: var(--text-secondary); margin-bottom: var(--space-md);">
-                        Elige tu servicio, fecha y hora en 30 segundos sin esperar llamadas.
+                        ${t('Elige tu servicio, fecha y hora en 30 segundos sin esperar llamadas.')}
                     </p>
                     <div style="font-size: 10px; color: var(--text-muted); word-break: break-all;">
                         ${Security.escapeHTML(targetUrl)}
@@ -807,9 +814,9 @@ export const Admin = (() => {
                 </div>
             </div>
             <div class="modal-footer" style="justify-content: center;">
-                <button class="btn btn-secondary" onclick="App.closeModal()">Cerrar</button>
+                <button class="btn btn-secondary" onclick="App.closeModal()">${t('Cerrar')}</button>
                 <button class="btn btn-primary" onclick="window.print()">
-                    <i data-lucide="printer"></i> Imprimir cartel
+                    <i data-lucide="printer"></i> ${t('Imprimir cartel')}
                 </button>
             </div>
         `);

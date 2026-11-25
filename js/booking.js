@@ -6,6 +6,7 @@ import { renderIcons } from './icons.js';
 import { Storage } from './storage.js';
 import { Security } from './security.js';
 import { App } from './app.js';
+import { t } from './i18n.js';
 
 export const Booking = (() => {
     let state = {
@@ -34,8 +35,8 @@ export const Booking = (() => {
         return `
         <div class="booking-container animate-fade-in-up">
             <div class="page-header text-center">
-                <h1 class="page-title">Reservar cita</h1>
-                <p class="page-subtitle">Selecciona tu servicio, fecha y hora</p>
+                <h1 class="page-title">${t('Reservar cita')}</h1>
+                <p class="page-subtitle">${t('Selecciona tu servicio, fecha y hora')}</p>
             </div>
             ${_renderProgressBar()}
             <div id="bookingStepContent">
@@ -51,17 +52,17 @@ export const Booking = (() => {
         <div class="progress-bar" id="bookingProgress">
             <div class="progress-step ${state.step >= 1 ? 'active' : ''} ${state.step > 1 ? 'completed' : ''}">
                 <div class="progress-step-number">${state.step > 1 ? '✓' : '1'}</div>
-                <span class="progress-step-label">Servicio</span>
+                <span class="progress-step-label">${t('Servicio')}</span>
             </div>
             <div class="progress-line ${state.step > 1 ? 'completed' : ''}"></div>
             <div class="progress-step ${state.step >= 2 ? 'active' : ''} ${state.step > 2 ? 'completed' : ''}">
                 <div class="progress-step-number">${state.step > 2 ? '✓' : '2'}</div>
-                <span class="progress-step-label">Fecha y hora</span>
+                <span class="progress-step-label">${t('Fecha y hora')}</span>
             </div>
             <div class="progress-line ${state.step > 2 ? 'completed' : ''}"></div>
             <div class="progress-step ${state.step >= 3 ? 'active' : ''}">
                 <div class="progress-step-number">3</div>
-                <span class="progress-step-label">Confirmar</span>
+                <span class="progress-step-label">${t('Confirmar')}</span>
             </div>
         </div>
         `;
@@ -75,17 +76,17 @@ export const Booking = (() => {
         return `
         <div class="booking-step">
             <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom: var(--space-lg); flex-wrap:wrap; gap: var(--space-sm);">
-                <h3 style="margin:0;">¿Qué servicio necesitas?</h3>
+                <h3 style="margin:0;">${t('¿Qué servicio necesitas?')}</h3>
                 <span class="badge badge-accent">
                     <i data-lucide="${catalogMode === 'women' ? 'venus' : 'mars'}" style="width:12px;height:12px;"></i>
-                    ${catalogMode === 'women' ? 'Señoras' : 'Caballeros'}
+                    ${catalogMode === 'women' ? t('Señoras') : t('Caballeros')}
                 </span>
             </div>
             ${services.length === 0 ? `
                 <div class="empty-state">
                     <i data-lucide="scissors"></i>
-                    <h3>Sin servicios disponibles</h3>
-                    <p>Todavía no hay servicios activos en este catálogo</p>
+                    <h3>${t('Sin servicios disponibles')}</h3>
+                    <p>${t('Todavía no hay servicios activos en este catálogo')}</p>
                 </div>
             ` : `
             <div class="service-grid">
@@ -109,7 +110,7 @@ export const Booking = (() => {
             <div style="display: flex; justify-content: flex-end; margin-top: var(--space-xl);">
                 <button class="btn btn-primary btn-lg" id="btnStep1Next"
                     onclick="Booking.goToStep(2)" ${!state.selectedService ? 'disabled style="opacity:0.5; pointer-events:none;"' : ''}>
-                    Continuar
+                    ${t('Continuar')}
                     <i data-lucide="arrow-right"></i>
                 </button>
             </div>
@@ -122,7 +123,7 @@ export const Booking = (() => {
     function _renderStep2() {
         return `
         <div class="booking-step">
-            <h3 style="margin-bottom: var(--space-lg);">Elige fecha y hora</h3>
+            <h3 style="margin-bottom: var(--space-lg);">${t('Elige fecha y hora')}</h3>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-lg);">
                 <div>
                     ${_renderCalendar()}
@@ -134,11 +135,11 @@ export const Booking = (() => {
             <div style="display: flex; justify-content: space-between; margin-top: var(--space-xl);">
                 <button class="btn btn-secondary btn-lg" onclick="Booking.goToStep(1)">
                     <i data-lucide="arrow-left"></i>
-                    Atrás
+                    ${t('Atrás')}
                 </button>
                 <button class="btn btn-primary btn-lg" id="btnStep2Next"
                     onclick="Booking.goToStep(3)" ${!state.selectedDate || !state.selectedTime ? 'disabled style="opacity:0.5; pointer-events:none;"' : ''}>
-                    Continuar
+                    ${t('Continuar')}
                     <i data-lucide="arrow-right"></i>
                 </button>
             </div>
@@ -158,8 +159,8 @@ export const Booking = (() => {
         const startDay = firstDay.getDay(); // 0=Sun
 
         const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-            'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-        const weekDays = ['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sá'];
+            'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'].map(t);
+        const weekDays = ['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sá'].map(t);
 
         let days = '';
 
@@ -221,11 +222,11 @@ export const Booking = (() => {
             <div class="time-slots-container">
                 <div class="time-slots-title">
                     <i data-lucide="clock"></i>
-                    Horarios disponibles
+                    ${t('Horarios disponibles')}
                 </div>
                 <div class="empty-state" style="padding: var(--space-xl);">
                     <i data-lucide="calendar" style="width:40px; height:40px; color: var(--text-muted); margin-bottom: var(--space-md);"></i>
-                    <p style="color: var(--text-muted); font-size: var(--fs-sm);">Selecciona una fecha para ver los horarios</p>
+                    <p style="color: var(--text-muted); font-size: var(--fs-sm);">${t('Selecciona una fecha para ver los horarios')}</p>
                 </div>
             </div>
             `;
@@ -243,11 +244,11 @@ export const Booking = (() => {
             <div class="time-slots-container">
                 <div class="time-slots-title">
                     <i data-lucide="clock"></i>
-                    Horarios disponibles
+                    ${t('Horarios disponibles')}
                 </div>
                 <div class="empty-state" style="padding: var(--space-xl);">
                     <i data-lucide="calendar-x" style="width:40px; height:40px; color: var(--text-muted); margin-bottom: var(--space-md);"></i>
-                    <p style="color: var(--text-muted); font-size: var(--fs-sm);">No hay horarios disponibles este día</p>
+                    <p style="color: var(--text-muted); font-size: var(--fs-sm);">${t('No hay horarios disponibles este día')}</p>
                 </div>
             </div>
             `;
@@ -257,7 +258,7 @@ export const Booking = (() => {
 
         if (morning.length > 0) {
             slotsHTML += `<div style="margin-bottom: var(--space-md);">
-                <div style="font-size: var(--fs-xs); color: var(--text-muted); margin-bottom: var(--space-sm); font-weight: 600;">MAÑANA</div>
+                <div style="font-size: var(--fs-xs); color: var(--text-muted); margin-bottom: var(--space-sm); font-weight: 600;">${t('MAÑANA')}</div>
                 <div class="time-slots-grid">
                     ${morning.map(slot => `
                         <div class="time-slot ${state.selectedTime === slot ? 'selected' : ''}"
@@ -271,7 +272,7 @@ export const Booking = (() => {
 
         if (afternoon.length > 0) {
             slotsHTML += `<div>
-                <div style="font-size: var(--fs-xs); color: var(--text-muted); margin-bottom: var(--space-sm); font-weight: 600;">TARDE</div>
+                <div style="font-size: var(--fs-xs); color: var(--text-muted); margin-bottom: var(--space-sm); font-weight: 600;">${t('TARDE')}</div>
                 <div class="time-slots-grid">
                     ${afternoon.map(slot => `
                         <div class="time-slot ${state.selectedTime === slot ? 'selected' : ''}"
@@ -287,8 +288,8 @@ export const Booking = (() => {
         <div class="time-slots-container">
             <div class="time-slots-title">
                 <i data-lucide="clock"></i>
-                Horarios disponibles
-                <span class="badge badge-accent" style="margin-left: auto;">${slots.length} disponibles</span>
+                ${t('Horarios disponibles')}
+                <span class="badge badge-accent" style="margin-left: auto;">${slots.length} ${t('disponibles')}</span>
             </div>
             ${slotsHTML}
         </div>
@@ -299,45 +300,50 @@ export const Booking = (() => {
     function _renderStep3() {
         const service = Storage.Services.getById(state.selectedService);
         const dateObj = new Date(state.selectedDate + 'T12:00:00');
-        const dayNames = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+        const dayNames = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'].map(t);
         const monthNames = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
-            'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+            'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'].map(t);
 
-        const dateFormatted = `${dayNames[dateObj.getDay()]}, ${dateObj.getDate()} de ${monthNames[dateObj.getMonth()]} de ${dateObj.getFullYear()}`;
+        const dateFormatted = t('{day}, {d} de {month} de {year}', {
+            day: dayNames[dateObj.getDay()],
+            d: dateObj.getDate(),
+            month: monthNames[dateObj.getMonth()],
+            year: dateObj.getFullYear()
+        });
 
         return `
         <div class="booking-step">
-            <h3 style="margin-bottom: var(--space-lg);">Confirma tu reserva</h3>
+            <h3 style="margin-bottom: var(--space-lg);">${t('Confirma tu reserva')}</h3>
             <div class="booking-summary">
                 <div class="booking-summary-row">
-                    <span class="booking-summary-label">Servicio</span>
+                    <span class="booking-summary-label">${t('Servicio')}</span>
                     <span class="booking-summary-value">${Security.escapeHTML(service.name)}</span>
                 </div>
                 <div class="booking-summary-row">
-                    <span class="booking-summary-label">Duración</span>
-                    <span class="booking-summary-value">${service.duration} minutos</span>
+                    <span class="booking-summary-label">${t('Duración')}</span>
+                    <span class="booking-summary-value">${service.duration} ${t('minutos')}</span>
                 </div>
                 <div class="booking-summary-row">
-                    <span class="booking-summary-label">Fecha</span>
+                    <span class="booking-summary-label">${t('Fecha')}</span>
                     <span class="booking-summary-value">${dateFormatted}</span>
                 </div>
                 <div class="booking-summary-row">
-                    <span class="booking-summary-label">Hora</span>
+                    <span class="booking-summary-label">${t('Hora')}</span>
                     <span class="booking-summary-value">${state.selectedTime} h</span>
                 </div>
                 <div class="booking-summary-row" style="padding-top: var(--space-lg);">
-                    <span class="booking-summary-label" style="font-size: var(--fs-md); font-weight: 600;">Total</span>
+                    <span class="booking-summary-label" style="font-size: var(--fs-md); font-weight: 600;">${t('Total')}</span>
                     <span class="booking-summary-value" style="font-size: var(--fs-xl); color: var(--accent);">${service.price}€</span>
                 </div>
             </div>
             <div style="display: flex; justify-content: space-between; margin-top: var(--space-xl);">
                 <button class="btn btn-secondary btn-lg" onclick="Booking.goToStep(2)">
                     <i data-lucide="arrow-left"></i>
-                    Atrás
+                    ${t('Atrás')}
                 </button>
                 <button class="btn btn-primary btn-xl" onclick="Booking.confirmBooking()">
                     <i data-lucide="check-circle"></i>
-                    Confirmar reserva
+                    ${t('Confirmar reserva')}
                 </button>
             </div>
         </div>
@@ -351,18 +357,18 @@ export const Booking = (() => {
             <div class="booking-success-icon">
                 <i data-lucide="check"></i>
             </div>
-            <h2 style="margin-bottom: var(--space-sm);">¡Reserva confirmada!</h2>
+            <h2 style="margin-bottom: var(--space-sm);">${t('¡Reserva confirmada!')}</h2>
             <p style="color: var(--text-secondary); margin-bottom: var(--space-xl);">
-                Tu cita ha sido reservada correctamente. Te esperamos.
+                ${t('Tu cita ha sido reservada correctamente. Te esperamos.')}
             </p>
             <div style="display: flex; gap: var(--space-md); justify-content: center;">
                 <button class="btn btn-secondary btn-lg" onclick="App.navigate('history')">
                     <i data-lucide="list"></i>
-                    Ver mis citas
+                    ${t('Ver mis citas')}
                 </button>
                 <button class="btn btn-primary btn-lg" onclick="App.navigate('home')">
                     <i data-lucide="home"></i>
-                    Ir al inicio
+                    ${t('Ir al inicio')}
                 </button>
             </div>
         </div>
@@ -418,7 +424,7 @@ export const Booking = (() => {
     function confirmBooking() {
         const user = Storage.Session.getCurrentUser();
         if (!user) {
-            App.showToast('error', 'Error', 'Debes iniciar sesión');
+            App.showToast('error', t('Error'), t('Debes iniciar sesión'));
             App.navigate('login');
             return;
         }
@@ -427,7 +433,7 @@ export const Booking = (() => {
         const service = Storage.Services.getById(state.selectedService);
         const availableSlots = Storage.getAvailableSlots(state.selectedDate, service.duration);
         if (!availableSlots.includes(state.selectedTime)) {
-            App.showToast('error', 'No disponible', 'Este horario ya ha sido reservado. Por favor, elige otro.');
+            App.showToast('error', t('No disponible'), t('Este horario ya ha sido reservado. Por favor, elige otro.'));
             goToStep(2);
             return;
         }
@@ -441,7 +447,7 @@ export const Booking = (() => {
             notes: ''
         });
 
-        App.showToast('success', '¡Reserva confirmada!', 'Tu cita ha sido creada correctamente');
+        App.showToast('success', t('¡Reserva confirmada!'), t('Tu cita ha sido creada correctamente'));
 
         // Show success screen
         const content = document.getElementById('bookingStepContent');

@@ -6,13 +6,14 @@ import { renderIcons } from './icons.js';
 import { Storage } from './storage.js';
 import { Security } from './security.js';
 import { App } from './app.js';
+import { t } from './i18n.js';
 
 export const Profile = (() => {
 
     // ── Main Render ──
     function render() {
         const user = Storage.Session.getCurrentUser();
-        if (!user) return '<p>Error: usuario no encontrado</p>';
+        if (!user) return `<p>${t('Error: usuario no encontrado')}</p>`;
 
         const appointments = Storage.Appointments.getByUser(user.id);
         const completed = appointments.filter(a => a.status === 'completed').length;
@@ -21,8 +22,8 @@ export const Profile = (() => {
         return `
         <div class="animate-fade-in-up">
             <div class="page-header">
-                <h1 class="page-title">Mi perfil</h1>
-                <p class="page-subtitle">Gestiona tu información personal</p>
+                <h1 class="page-title">${t('Mi perfil')}</h1>
+                <p class="page-subtitle">${t('Gestiona tu información personal')}</p>
             </div>
 
             <!-- Profile Header -->
@@ -47,19 +48,19 @@ export const Profile = (() => {
                 <div class="profile-stats">
                     <div class="profile-stat">
                         <div class="profile-stat-value">${completed}</div>
-                        <div class="profile-stat-label">Visitas</div>
+                        <div class="profile-stat-label">${t('Visitas')}</div>
                     </div>
                     <div class="profile-stat">
                         <div class="profile-stat-value">${gallery.length}</div>
-                        <div class="profile-stat-label">Fotos</div>
+                        <div class="profile-stat-label">${t('Fotos')}</div>
                     </div>
                 </div>
             </div>
 
             <!-- Tabs -->
             <div class="tabs mb-lg" style="max-width: 400px;">
-                <div class="tab active" onclick="Profile.showTab('info')" id="tabInfo">Información</div>
-                <div class="tab" onclick="Profile.showTab('gallery')" id="tabGallery">Galería</div>
+                <div class="tab active" onclick="Profile.showTab('info')" id="tabInfo">${t('Información')}</div>
+                <div class="tab" onclick="Profile.showTab('gallery')" id="tabGallery">${t('Galería')}</div>
             </div>
 
             <!-- Tab Content -->
@@ -76,40 +77,40 @@ export const Profile = (() => {
         <div class="card animate-fade-in" style="max-width: 600px;">
             <form onsubmit="Profile.saveProfile(event)">
                 <div class="form-group">
-                    <label class="form-label">Nombre completo</label>
+                    <label class="form-label" for="profileName">${t('Nombre completo')}</label>
                     <div class="form-input-icon">
                         <input type="text" id="profileName" class="form-input" value="${Security.escapeHTML(user.name)}" required>
                         <i data-lucide="user"></i>
                     </div>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Email</label>
+                    <label class="form-label" for="profileEmail">${t('Email')}</label>
                     <div class="form-input-icon">
                         <input type="email" id="profileEmail" class="form-input" value="${Security.escapeHTML(user.email)}" required>
                         <i data-lucide="mail"></i>
                     </div>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Teléfono</label>
+                    <label class="form-label" for="profilePhone">${t('Teléfono')}</label>
                     <div class="form-input-icon">
                         <input type="tel" id="profilePhone" class="form-input" value="${Security.escapeHTML(user.phone || '')}">
                         <i data-lucide="phone"></i>
                     </div>
                 </div>
                 <div class="divider"></div>
-                <h4 style="margin-bottom: var(--space-md);">Cambiar contraseña</h4>
+                <h4 style="margin-bottom: var(--space-md);">${t('Cambiar contraseña')}</h4>
                 <div class="form-group">
-                    <label class="form-label">Nueva contraseña</label>
+                    <label class="form-label" for="profilePassword">${t('Nueva contraseña')}</label>
                     <div class="form-input-icon">
-                        <input type="password" id="profilePassword" class="form-input" placeholder="Dejar vacío para no cambiar" minlength="6">
+                        <input type="password" id="profilePassword" class="form-input" placeholder="${t('Dejar vacío para no cambiar')}" minlength="6" autocomplete="new-password">
                         <i data-lucide="lock"></i>
                     </div>
-                    <span class="form-hint">Mínimo 6 caracteres</span>
+                    <span class="form-hint">${t('Mínimo 6 caracteres')}</span>
                 </div>
                 <div style="display: flex; gap: var(--space-sm); justify-content: flex-end;">
                     <button type="submit" class="btn btn-primary">
                         <i data-lucide="save"></i>
-                        Guardar cambios
+                        ${t('Guardar cambios')}
                     </button>
                 </div>
             </form>
@@ -125,17 +126,17 @@ export const Profile = (() => {
         return `
         <div class="animate-fade-in">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-lg);">
-                <p class="text-secondary">${gallery.length} foto${gallery.length !== 1 ? 's' : ''} de referencia</p>
+                <p class="text-secondary">${gallery.length} ${gallery.length !== 1 ? t('fotos de referencia') : t('foto de referencia')}</p>
             </div>
             <div class="gallery-grid">
                 <label class="gallery-add" for="galleryUpload">
                     <i data-lucide="plus"></i>
-                    <span>Añadir foto</span>
+                    <span>${t('Añadir foto')}</span>
                     <input type="file" id="galleryUpload" accept="image/*" style="display:none" onchange="Profile.uploadGalleryPhoto(event)">
                 </label>
                 ${gallery.filter(item => Security.isSafeImageDataUrl(item.imageData)).map(item => `
                     <div class="gallery-item" onclick="Profile.viewGalleryItem('${item.id}')">
-                        <img src="${item.imageData}" alt="${Security.escapeHTML(item.caption || 'Foto')}">
+                        <img src="${item.imageData}" alt="${Security.escapeHTML(item.caption) || t('Foto')}">
                         <div class="gallery-item-overlay">
                             <span class="gallery-item-caption">${Security.escapeHTML(item.caption || '')}</span>
                         </div>
@@ -153,7 +154,7 @@ export const Profile = (() => {
         if (!content) return;
 
         // Update tab active state
-        document.querySelectorAll('.tabs .tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tabs .tab').forEach(el => el.classList.remove('active'));
         if (tab === 'info') {
             document.getElementById('tabInfo').classList.add('active');
             content.innerHTML = _renderInfoTab(user);
@@ -173,24 +174,24 @@ export const Profile = (() => {
         const password = document.getElementById('profilePassword').value;
 
         if (!name || name.length < 2) {
-            App.showToast('error', 'Error', 'Introduce un nombre válido');
+            App.showToast('error', t('Error'), t('Introduce un nombre válido'));
             return;
         }
 
         if (!Security.validateEmail(email)) {
-            App.showToast('error', 'Error', 'El formato del email no es válido');
+            App.showToast('error', t('Error'), t('El formato del email no es válido'));
             return;
         }
 
         if (phone && !Security.validatePhone(phone)) {
-            App.showToast('error', 'Error', 'El formato del teléfono no es válido');
+            App.showToast('error', t('Error'), t('El formato del teléfono no es válido'));
             return;
         }
 
         // Check email uniqueness
         const existing = Storage.Users.getByEmail(email);
         if (existing && existing.id !== user.id) {
-            App.showToast('error', 'Error', 'Ese email ya está en uso');
+            App.showToast('error', t('Error'), t('Ese email ya está en uso'));
             return;
         }
 
@@ -198,12 +199,12 @@ export const Profile = (() => {
         if (password && password.length >= 6) {
             updates.password = password;
         } else if (password && password.length > 0 && password.length < 6) {
-            App.showToast('error', 'Error', 'La contraseña debe tener al menos 6 caracteres');
+            App.showToast('error', t('Error'), t('La contraseña debe tener al menos 6 caracteres'));
             return;
         }
 
         Storage.Users.update(user.id, updates);
-        App.showToast('success', 'Guardado', 'Tu perfil ha sido actualizado');
+        App.showToast('success', t('Guardado'), t('Tu perfil ha sido actualizado'));
         App.refreshNav();
     }
 
@@ -211,23 +212,23 @@ export const Profile = (() => {
         const file = e.target.files[0];
         if (!file) return;
         if (!file.type || !file.type.startsWith('image/')) {
-            App.showToast('error', 'Error', 'El archivo debe ser una imagen');
+            App.showToast('error', t('Error'), t('El archivo debe ser una imagen'));
             return;
         }
         if (file.size > 2 * 1024 * 1024) {
-            App.showToast('error', 'Error', 'La imagen debe ser menor a 2MB');
+            App.showToast('error', t('Error'), t('La imagen debe ser menor a 2MB'));
             return;
         }
 
         const reader = new FileReader();
         reader.onload = (ev) => {
             if (!Security.isSafeImageDataUrl(ev.target.result)) {
-                App.showToast('error', 'Error', 'Formato de imagen no soportado');
+                App.showToast('error', t('Error'), t('Formato de imagen no soportado'));
                 return;
             }
             const user = Storage.Session.getCurrentUser();
             Storage.Users.update(user.id, { avatar: ev.target.result });
-            App.showToast('success', 'Avatar actualizado', 'Tu foto de perfil ha sido cambiada');
+            App.showToast('success', t('Avatar actualizado'), t('Tu foto de perfil ha sido cambiada'));
             App.renderPage();
         };
         reader.readAsDataURL(file);
@@ -237,21 +238,21 @@ export const Profile = (() => {
         const file = e.target.files[0];
         if (!file) return;
         if (!file.type || !file.type.startsWith('image/')) {
-            App.showToast('error', 'Error', 'El archivo debe ser una imagen');
+            App.showToast('error', t('Error'), t('El archivo debe ser una imagen'));
             return;
         }
         if (file.size > 3 * 1024 * 1024) {
-            App.showToast('error', 'Error', 'La imagen debe ser menor a 3MB');
+            App.showToast('error', t('Error'), t('La imagen debe ser menor a 3MB'));
             return;
         }
 
-        const rawCaption = prompt('Añade una descripción (opcional):') || '';
+        const rawCaption = prompt(t('Añade una descripción (opcional):')) || '';
         const caption = Security.sanitizeString(rawCaption, 100);
 
         const reader = new FileReader();
         reader.onload = (ev) => {
             if (!Security.isSafeImageDataUrl(ev.target.result)) {
-                App.showToast('error', 'Error', 'Formato de imagen no soportado');
+                App.showToast('error', t('Error'), t('Formato de imagen no soportado'));
                 return;
             }
             const user = Storage.Session.getCurrentUser();
@@ -261,7 +262,7 @@ export const Profile = (() => {
                 caption: caption,
                 date: new Date().toISOString().split('T')[0]
             });
-            App.showToast('success', 'Foto añadida', 'La foto se ha guardado en tu galería');
+            App.showToast('success', t('Foto añadida'), t('La foto se ha guardado en tu galería'));
             showTab('gallery');
         };
         reader.readAsDataURL(file);
@@ -273,8 +274,8 @@ export const Profile = (() => {
 
         App.showModal(`
             <div class="modal-header">
-                <h3 class="modal-title">${Security.escapeHTML(item.caption || 'Foto de referencia')}</h3>
-                <button class="modal-close" onclick="App.closeModal()">
+                <h3 class="modal-title">${Security.escapeHTML(item.caption) || t('Foto de referencia')}</h3>
+                <button class="modal-close" onclick="App.closeModal()" aria-label="${t('Cerrar')}">
                     <i data-lucide="x"></i>
                 </button>
             </div>
@@ -283,7 +284,7 @@ export const Profile = (() => {
             </div>
             <div class="modal-footer">
                 <button class="btn btn-danger btn-sm" onclick="Profile.deleteGalleryItem('${item.id}')">
-                    <i data-lucide="trash-2"></i> Eliminar
+                    <i data-lucide="trash-2"></i> ${t('Eliminar')}
                 </button>
             </div>
         `);
@@ -292,7 +293,7 @@ export const Profile = (() => {
     function deleteGalleryItem(itemId) {
         Storage.Gallery.remove(itemId);
         App.closeModal();
-        App.showToast('info', 'Eliminada', 'La foto ha sido eliminada');
+        App.showToast('info', t('Eliminada'), t('La foto ha sido eliminada'));
         showTab('gallery');
     }
 
