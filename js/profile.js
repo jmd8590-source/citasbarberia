@@ -115,6 +115,23 @@ export const Profile = (() => {
                 </div>
             </form>
         </div>
+
+        <div class="card animate-fade-in" style="max-width: 600px; margin-top: var(--space-lg);">
+            <h4 style="margin-bottom: var(--space-xs);">${t('Tus datos')}</h4>
+            <p class="text-secondary" style="font-size: var(--fs-sm); margin-bottom: var(--space-md);">
+                ${t('Descarga una copia de tus datos o elimina tu cuenta de forma permanente. Consulta nuestra {privacy} para más información.', {
+                    privacy: `<a href="#privacy">${t('Política de privacidad')}</a>`
+                })}
+            </p>
+            <div style="display: flex; gap: var(--space-sm); flex-wrap: wrap;">
+                <button class="btn btn-secondary btn-sm" onclick="Profile.downloadMyData()">
+                    <i data-lucide="download"></i> ${t('Descargar mis datos')}
+                </button>
+                <button class="btn btn-danger btn-sm" onclick="Profile.confirmDeleteAccount()">
+                    <i data-lucide="trash-2"></i> ${t('Eliminar mi cuenta')}
+                </button>
+            </div>
+        </div>
         `;
     }
 
@@ -301,6 +318,69 @@ export const Profile = (() => {
         return Security.escapeHTML(name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase());
     }
 
+    // ── GDPR: data portability & erasure ──
+    function downloadMyData() {
+        const user = Storage.Session.getCurrentUser();
+        if (!user) return;
+
+        const { password, ...safeUser } = user; // never export the password hash
+        const exportData = {
+            exportedAt: new Date().toISOString(),
+            profile: safeUser,
+            appointments: Storage.Appointments.getByUser(user.id),
+            gallery: Storage.Gallery.getByUser(user.id)
+        };
+
+        const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `barberclub-datos-${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        App.showToast('success', t('Descargado'), t('Tus datos han sido descargados'));
+    }
+
+    function confirmDeleteAccount() {
+        App.showModal(`
+            <div class="modal-header">
+                <h3 class="modal-title">${t('¿Eliminar tu cuenta?')}</h3>
+                <button class="modal-close" onclick="App.closeModal()" aria-label="${t('Cerrar')}">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <div class="modal-body text-center">
+                <div class="confirm-icon confirm-icon-danger" style="margin: 0 auto var(--space-md);">
+                    <i data-lucide="alert-triangle"></i>
+                </div>
+                <p class="confirm-message">${t('Se eliminarán permanentemente tu perfil, tus citas y tu galería. Esta acción no se puede deshacer.')}</p>
+            </div>
+            <div class="modal-footer" style="justify-content: center;">
+                <button class="btn btn-secondary" onclick="App.closeModal()">${t('Cancelar')}</button>
+                <button class="btn btn-danger" onclick="Profile.deleteAccount()">
+                    <i data-lucide="trash-2"></i> ${t('Sí, eliminar mi cuenta')}
+                </button>
+            </div>
+        `);
+    }
+
+    function deleteAccount() {
+        const user = Storage.Session.getCurrentUser();
+        if (!user) return;
+
+        Storage.Appointments.getByUser(user.id).forEach(a => Storage.Appointments.remove(a.id));
+        Storage.Gallery.getByUser(user.id).forEach(g => Storage.Gallery.remove(g.id));
+        Storage.Users.remove(user.id);
+        Storage.Session.clear();
+
+        App.closeModal();
+        App.showToast('success', t('Cuenta eliminada'), t('Tu cuenta y tus datos han sido eliminados'));
+        App.navigate('login');
+    }
+
     // ── Public API ──
     return {
         render,
@@ -309,7 +389,10 @@ export const Profile = (() => {
         uploadAvatar,
         uploadGalleryPhoto,
         viewGalleryItem,
-        deleteGalleryItem
+        deleteGalleryItem,
+        downloadMyData,
+        confirmDeleteAccount,
+        deleteAccount
     };
 })();
 

@@ -14,6 +14,8 @@ import { ServicesAdmin } from './services.js';
 import { Schedule } from './schedule.js';
 import { Admin } from './admin.js';
 import { t, getLang, setLang } from './i18n.js';
+import { LegalPages } from './legal.js';
+import { Consent } from './consent.js';
 
 export const App = (() => {
     let currentRoute = '';
@@ -22,6 +24,8 @@ export const App = (() => {
     const clientRoutes = ['home', 'booking', 'profile', 'history', 'contact'];
     const adminRoutes = ['dashboard', 'agenda', 'clients', 'admin-services', 'schedule', 'settings'];
     const publicRoutes = ['login', 'register'];
+    // Viewable whether logged in or not, rendered without the app shell (privacy/terms links from the footer and from within the app)
+    const standaloneRoutes = ['privacy', 'terms'];
 
     // ── Navigation Config (built fresh each render so labels follow the active language) ──
     function _clientNav() {
@@ -56,6 +60,9 @@ export const App = (() => {
 
         // Initial route
         _handleRoute();
+
+        // Cookie / local-storage consent notice (first visit only)
+        Consent.initConsentBanner(renderIcons);
     }
 
     // ── Router ──
@@ -67,7 +74,7 @@ export const App = (() => {
         const isAdmin = Storage.Session.isAdmin();
 
         // Auth guard
-        if (!isLoggedIn && !publicRoutes.includes(route)) {
+        if (!isLoggedIn && !publicRoutes.includes(route) && !standaloneRoutes.includes(route)) {
             navigate('login');
             return;
         }
@@ -108,8 +115,8 @@ export const App = (() => {
 
         const isLoggedIn = Storage.Session.isLoggedIn();
 
-        if (!isLoggedIn || publicRoutes.includes(currentRoute)) {
-            // Auth pages — no shell
+        if (!isLoggedIn || publicRoutes.includes(currentRoute) || standaloneRoutes.includes(currentRoute)) {
+            // Auth pages and standalone legal pages — no shell
             app.innerHTML = _renderPageContent();
         } else {
             // App shell
@@ -229,6 +236,8 @@ export const App = (() => {
             // Public
             case 'login': return Auth.renderLogin();
             case 'register': return Auth.renderRegister();
+            case 'privacy': return LegalPages.renderPrivacy();
+            case 'terms': return LegalPages.renderTerms();
             // Client
             case 'home': return _renderHome();
             case 'booking': return Booking.render();

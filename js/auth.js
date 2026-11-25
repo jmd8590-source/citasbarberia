@@ -62,6 +62,9 @@ export const Auth = (() => {
                     </div>
                 </div>
             </div>
+            <p class="auth-legal-links">
+                <a href="#privacy">${t('Política de privacidad')}</a> · <a href="#terms">${t('Términos y condiciones')}</a>
+            </p>
         </div>
         `;
     }
@@ -113,6 +116,12 @@ export const Auth = (() => {
                                 <i data-lucide="lock"></i>
                             </div>
                         </div>
+                        <p class="auth-consent-hint">
+                            ${t('Al crear una cuenta aceptas nuestra {privacy} y nuestros {terms}.', {
+                                privacy: `<a href="#privacy">${t('Política de privacidad')}</a>`,
+                                terms: `<a href="#terms">${t('Términos y condiciones')}</a>`
+                            })}
+                        </p>
                         <button type="submit" class="btn btn-primary btn-block btn-lg">
                             <i data-lucide="user-plus"></i>
                             ${t('Crear cuenta')}
@@ -123,6 +132,9 @@ export const Auth = (() => {
                     </div>
                 </div>
             </div>
+            <p class="auth-legal-links">
+                <a href="#privacy">${t('Política de privacidad')}</a> · <a href="#terms">${t('Términos y condiciones')}</a>
+            </p>
         </div>
         `;
     }

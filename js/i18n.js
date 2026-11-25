@@ -366,7 +366,31 @@ const en = {
     'Mostrando servicios para caballeros': "Showing men's services",
 
     // ── Loading ──
-    'Cargando BarberClub...': 'Loading BarberClub...'
+    'Cargando BarberClub...': 'Loading BarberClub...',
+
+    // ── Cookie consent / legal ──
+    'Preferencias de privacidad': 'Privacy preferences',
+    'Usamos almacenamiento local necesario para que la app funcione (sesión, tema, idioma). No usamos cookies de publicidad ni analítica de terceros.':
+        "We use local storage that's necessary for the app to work (session, theme, language). We don't use third-party advertising or analytics cookies.",
+    'Más información': 'Learn more',
+    'Solo necesarias': 'Necessary only',
+    'Aceptar todo': 'Accept all',
+    'Política de privacidad': 'Privacy Policy',
+    'Términos y condiciones': 'Terms & Conditions',
+    'Volver': 'Back',
+    'Al crear una cuenta aceptas nuestra {privacy} y nuestros {terms}.': 'By creating an account you accept our {privacy} and our {terms}.',
+    'Tus datos': 'Your data',
+    'Descarga una copia de tus datos o elimina tu cuenta de forma permanente. Consulta nuestra {privacy} para más información.':
+        'Download a copy of your data or permanently delete your account. See our {privacy} for more information.',
+    'Descargar mis datos': 'Download my data',
+    'Eliminar mi cuenta': 'Delete my account',
+    'Tus datos han sido descargados': 'Your data has been downloaded',
+    '¿Eliminar tu cuenta?': 'Delete your account?',
+    'Se eliminarán permanentemente tu perfil, tus citas y tu galería. Esta acción no se puede deshacer.':
+        'Your profile, appointments and gallery will be permanently deleted. This action cannot be undone.',
+    'Sí, eliminar mi cuenta': 'Yes, delete my account',
+    'Cuenta eliminada': 'Account deleted',
+    'Tu cuenta y tus datos han sido eliminados': 'Your account and data have been deleted'
 };
 
 function getLang() {

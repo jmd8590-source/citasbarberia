@@ -995,3 +995,114 @@
         font-size: var(--fs-xl);
     }
 }
+
+/* ── Cookie / Consent Banner ── */
+.cookie-banner {
+    position: fixed;
+    left: var(--space-lg);
+    right: var(--space-lg);
+    bottom: var(--space-lg);
+    max-width: 720px;
+    margin: 0 auto;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    padding: var(--space-lg);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-lg);
+    z-index: var(--z-toast);
+}
+
+.cookie-banner-text {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-sm);
+    flex: 1;
+    min-width: 240px;
+}
+
+.cookie-banner-text i {
+    width: 20px;
+    height: 20px;
+    color: var(--accent);
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.cookie-banner-text p {
+    font-size: var(--fs-sm);
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+
+.cookie-banner-text a {
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.cookie-banner-actions {
+    display: flex;
+    gap: var(--space-sm);
+    flex-wrap: wrap;
+}
+
+@media (max-width: 640px) {
+    .cookie-banner {
+        left: var(--space-sm);
+        right: var(--space-sm);
+        bottom: var(--space-sm);
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .cookie-banner-actions {
+        justify-content: stretch;
+    }
+
+    .cookie-banner-actions .btn {
+        flex: 1;
+    }
+}
+
+/* ── Legal pages (Privacy / Terms) ── */
+.legal-content h3 {
+    margin-top: var(--space-lg);
+    margin-bottom: var(--space-sm);
+    font-size: var(--fs-md);
+}
+
+.legal-content p,
+.legal-content li {
+    color: var(--text-secondary);
+    font-size: var(--fs-sm);
+    line-height: 1.7;
+    margin-bottom: var(--space-sm);
+}
+
+.legal-content ul {
+    list-style: disc;
+    padding-left: var(--space-lg);
+}
+
+.legal-content a {
+    text-decoration: underline;
+}
+
+.auth-legal-links {
+    position: relative;
+    z-index: 1;
+    text-align: center;
+    margin-top: var(--space-lg);
+    font-size: var(--fs-xs);
+    color: var(--text-muted);
+}
+
+.auth-consent-hint {
+    font-size: var(--fs-xs);
+    color: var(--text-muted);
+    margin-bottom: var(--space-md);
+    line-height: 1.5;
+}
