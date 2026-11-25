@@ -2,7 +2,9 @@
    storage.js — Capa de datos (localStorage)
    ============================================= */
 
-const Storage = (() => {
+import { Security } from './security.js';
+
+export const Storage = (() => {
     // Keys
     const KEYS = {
         USERS: 'bb_users',

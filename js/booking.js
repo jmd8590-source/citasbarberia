@@ -2,7 +2,12 @@
    booking.js — Booking Flow Module
    ============================================= */
 
-const Booking = (() => {
+import { renderIcons } from './icons.js';
+import { Storage } from './storage.js';
+import { Security } from './security.js';
+import { App } from './app.js';
+
+export const Booking = (() => {
     let state = {
         step: 1,
         selectedService: null,
@@ -397,7 +402,7 @@ const Booking = (() => {
         }
 
         _updateStepContent();
-        if (typeof lucide !== 'undefined') lucide.createIcons();
+        renderIcons();
     }
 
     function confirmBooking() {
@@ -432,7 +437,7 @@ const Booking = (() => {
         const content = document.getElementById('bookingStepContent');
         if (content) {
             content.innerHTML = _renderSuccess();
-            if (typeof lucide !== 'undefined') lucide.createIcons();
+            renderIcons();
         }
     }
 
@@ -446,7 +451,7 @@ const Booking = (() => {
             case 3: content.innerHTML = _renderStep3(); break;
         }
 
-        if (typeof lucide !== 'undefined') lucide.createIcons();
+        renderIcons();
     }
 
     // ── Public API ──
@@ -460,3 +465,5 @@ const Booking = (() => {
         confirmBooking
     };
 })();
+
+window.Booking = Booking;

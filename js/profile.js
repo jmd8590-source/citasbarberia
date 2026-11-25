@@ -2,7 +2,12 @@
    profile.js — User Profile Module
    ============================================= */
 
-const Profile = (() => {
+import { renderIcons } from './icons.js';
+import { Storage } from './storage.js';
+import { Security } from './security.js';
+import { App } from './app.js';
+
+export const Profile = (() => {
 
     // ── Main Render ──
     function render() {
@@ -24,8 +29,8 @@ const Profile = (() => {
             <div class="profile-header">
                 <div class="profile-avatar-wrapper">
                     <div class="avatar avatar-2xl">
-                        ${user.avatar
-                            ? `<img src="${user.avatar}" alt="${user.name}">`
+                        ${user.avatar && Security.isSafeImageDataUrl(user.avatar)
+                            ? `<img src="${user.avatar}" alt="${Security.escapeHTML(user.name)}">`
                             : _getInitials(user.name)
                         }
                     </div>
@@ -73,21 +78,21 @@ const Profile = (() => {
                 <div class="form-group">
                     <label class="form-label">Nombre completo</label>
                     <div class="form-input-icon">
-                        <input type="text" id="profileName" class="form-input" value="${user.name}" required>
+                        <input type="text" id="profileName" class="form-input" value="${Security.escapeHTML(user.name)}" required>
                         <i data-lucide="user"></i>
                     </div>
                 </div>
                 <div class="form-group">
                     <label class="form-label">Email</label>
                     <div class="form-input-icon">
-                        <input type="email" id="profileEmail" class="form-input" value="${user.email}" required>
+                        <input type="email" id="profileEmail" class="form-input" value="${Security.escapeHTML(user.email)}" required>
                         <i data-lucide="mail"></i>
                     </div>
                 </div>
                 <div class="form-group">
                     <label class="form-label">Teléfono</label>
                     <div class="form-input-icon">
-                        <input type="tel" id="profilePhone" class="form-input" value="${user.phone || ''}">
+                        <input type="tel" id="profilePhone" class="form-input" value="${Security.escapeHTML(user.phone || '')}">
                         <i data-lucide="phone"></i>
                     </div>
                 </div>
@@ -128,7 +133,7 @@ const Profile = (() => {
                     <span>Añadir foto</span>
                     <input type="file" id="galleryUpload" accept="image/*" style="display:none" onchange="Profile.uploadGalleryPhoto(event)">
                 </label>
-                ${gallery.map(item => `
+                ${gallery.filter(item => Security.isSafeImageDataUrl(item.imageData)).map(item => `
                     <div class="gallery-item" onclick="Profile.viewGalleryItem('${item.id}')">
                         <img src="${item.imageData}" alt="${Security.escapeHTML(item.caption || 'Foto')}">
                         <div class="gallery-item-overlay">
@@ -156,7 +161,7 @@ const Profile = (() => {
             document.getElementById('tabGallery').classList.add('active');
             content.innerHTML = _renderGalleryTab();
         }
-        if (typeof lucide !== 'undefined') lucide.createIcons();
+        renderIcons();
     }
 
     function saveProfile(e) {
@@ -205,6 +210,10 @@ const Profile = (() => {
     function uploadAvatar(e) {
         const file = e.target.files[0];
         if (!file) return;
+        if (!file.type || !file.type.startsWith('image/')) {
+            App.showToast('error', 'Error', 'El archivo debe ser una imagen');
+            return;
+        }
         if (file.size > 2 * 1024 * 1024) {
             App.showToast('error', 'Error', 'La imagen debe ser menor a 2MB');
             return;
@@ -212,6 +221,10 @@ const Profile = (() => {
 
         const reader = new FileReader();
         reader.onload = (ev) => {
+            if (!Security.isSafeImageDataUrl(ev.target.result)) {
+                App.showToast('error', 'Error', 'Formato de imagen no soportado');
+                return;
+            }
             const user = Storage.Session.getCurrentUser();
             Storage.Users.update(user.id, { avatar: ev.target.result });
             App.showToast('success', 'Avatar actualizado', 'Tu foto de perfil ha sido cambiada');
@@ -223,6 +236,10 @@ const Profile = (() => {
     function uploadGalleryPhoto(e) {
         const file = e.target.files[0];
         if (!file) return;
+        if (!file.type || !file.type.startsWith('image/')) {
+            App.showToast('error', 'Error', 'El archivo debe ser una imagen');
+            return;
+        }
         if (file.size > 3 * 1024 * 1024) {
             App.showToast('error', 'Error', 'La imagen debe ser menor a 3MB');
             return;
@@ -233,6 +250,10 @@ const Profile = (() => {
 
         const reader = new FileReader();
         reader.onload = (ev) => {
+            if (!Security.isSafeImageDataUrl(ev.target.result)) {
+                App.showToast('error', 'Error', 'Formato de imagen no soportado');
+                return;
+            }
             const user = Storage.Session.getCurrentUser();
             Storage.Gallery.create({
                 userId: user.id,
@@ -258,7 +279,7 @@ const Profile = (() => {
                 </button>
             </div>
             <div class="modal-body" style="padding:0;">
-                <img src="${item.imageData}" alt="${Security.escapeHTML(item.caption || '')}" style="width:100%; border-radius: 0 0 var(--radius-lg) var(--radius-lg);">
+                ${Security.isSafeImageDataUrl(item.imageData) ? `<img src="${item.imageData}" alt="${Security.escapeHTML(item.caption || '')}" style="width:100%; border-radius: 0 0 var(--radius-lg) var(--radius-lg);">` : ''}
             </div>
             <div class="modal-footer">
                 <button class="btn btn-danger btn-sm" onclick="Profile.deleteGalleryItem('${item.id}')">
@@ -276,7 +297,7 @@ const Profile = (() => {
     }
 
     function _getInitials(name) {
-        return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+        return Security.escapeHTML(name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase());
     }
 
     // ── Public API ──
@@ -290,3 +311,5 @@ const Profile = (() => {
         deleteGalleryItem
     };
 })();
+
+window.Profile = Profile;

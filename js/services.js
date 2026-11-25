@@ -2,7 +2,11 @@
    services.js — Services Management (Admin)
    ============================================= */
 
-const ServicesAdmin = (() => {
+import { Storage } from './storage.js';
+import { Security } from './security.js';
+import { App } from './app.js';
+
+export const ServicesAdmin = (() => {
     const iconOptions = [
         { value: 'scissors', label: 'Tijeras' },
         { value: 'pen-tool', label: 'Navaja' },
@@ -224,3 +228,5 @@ const ServicesAdmin = (() => {
         confirmDelete
     };
 })();
+
+window.ServicesAdmin = ServicesAdmin;

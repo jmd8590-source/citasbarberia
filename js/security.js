@@ -2,7 +2,7 @@
    security.js — Security, Sanitization & Crypto Utility
    ============================================= */
 
-const Security = (() => {
+export const Security = (() => {
 
     // ── XSS Prevention: HTML Escaping ──
     function escapeHTML(str) {
@@ -100,6 +100,12 @@ const Security = (() => {
         return re.test(timeStr);
     }
 
+    // ── Safe Data-URL check for user-uploaded images ──
+    function isSafeImageDataUrl(str) {
+        if (typeof str !== 'string') return false;
+        return /^data:image\/(png|jpe?g|gif|webp|avif);base64,[A-Za-z0-9+/=]+$/.test(str);
+    }
+
     // ── Sanitize Data Object ──
     function sanitizeObject(obj, allowedKeys = null) {
         if (!obj || typeof obj !== 'object') return {};
@@ -130,6 +136,7 @@ const Security = (() => {
         validatePhone,
         validateDate,
         validateTime,
-        sanitizeObject
+        sanitizeObject,
+        isSafeImageDataUrl
     };
 })();

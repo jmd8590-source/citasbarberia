@@ -2,7 +2,18 @@
    app.js — SPA Router & App Shell
    ============================================= */
 
-const App = (() => {
+import { renderIcons } from './icons.js';
+import { Storage } from './storage.js';
+import { Security } from './security.js';
+import { Auth } from './auth.js';
+import { Booking } from './booking.js';
+import { Profile } from './profile.js';
+import { History } from './history.js';
+import { ServicesAdmin } from './services.js';
+import { Schedule } from './schedule.js';
+import { Admin } from './admin.js';
+
+export const App = (() => {
     let currentRoute = '';
 
     // ── Route Definitions ──
@@ -99,9 +110,7 @@ const App = (() => {
         }
 
         // Initialize Lucide icons
-        if (typeof lucide !== 'undefined') {
-            lucide.createIcons();
-        }
+        renderIcons();
     }
 
     // ── App Shell ──
@@ -130,7 +139,7 @@ const App = (() => {
                 <div class="sidebar-footer">
                     <div class="sidebar-user" onclick="App.toggleUserMenu()">
                         <div class="sidebar-user-avatar">
-                            ${user.avatar ? `<img src="${user.avatar}" alt="">` : _getInitials(user.name)}
+                            ${user.avatar && Security.isSafeImageDataUrl(user.avatar) ? `<img src="${user.avatar}" alt="">` : _getInitials(user.name)}
                         </div>
                         <div class="sidebar-user-info">
                             <div class="sidebar-user-name">${Security.escapeHTML(user.name)}</div>
@@ -159,7 +168,7 @@ const App = (() => {
                             Hola, ${Security.escapeHTML(user.name.split(' ')[0])}
                         </span>
                         <div class="avatar avatar-sm" style="cursor: pointer;" onclick="${isAdmin ? '' : "App.navigate('profile')" }">
-                            ${user.avatar ? `<img src="${Security.escapeHTML(user.avatar)}" alt="">` : _getInitials(user.name)}
+                            ${user.avatar && Security.isSafeImageDataUrl(user.avatar) ? `<img src="${user.avatar}" alt="">` : _getInitials(user.name)}
                         </div>
                     </div>
                 </header>
@@ -359,7 +368,7 @@ const App = (() => {
                         </div>
                         <div>
                             <h4>Dirección</h4>
-                            <p>${settings.address || 'No configurada'}</p>
+                            <p>${Security.escapeHTML(settings.address) || 'No configurada'}</p>
                         </div>
                     </div>
                     <div class="contact-item">
@@ -368,7 +377,7 @@ const App = (() => {
                         </div>
                         <div>
                             <h4>Teléfono</h4>
-                            <p>${settings.phone || 'No configurado'}</p>
+                            <p>${Security.escapeHTML(settings.phone) || 'No configurado'}</p>
                         </div>
                     </div>
                     <div class="contact-item">
@@ -377,16 +386,16 @@ const App = (() => {
                         </div>
                         <div>
                             <h4>Email</h4>
-                            <p>${settings.email || 'No configurado'}</p>
+                            <p>${Security.escapeHTML(settings.email) || 'No configurado'}</p>
                         </div>
                     </div>
                     <div class="contact-item">
                         <div class="contact-item-icon">
-                            <i data-lucide="instagram"></i>
+                            <i data-lucide="at-sign"></i>
                         </div>
                         <div>
                             <h4>Instagram</h4>
-                            <p>${settings.instagram || 'No configurado'}</p>
+                            <p>${Security.escapeHTML(settings.instagram) || 'No configurado'}</p>
                         </div>
                     </div>
                 </div>
@@ -394,7 +403,7 @@ const App = (() => {
                 <div class="contact-map">
                     <div class="contact-map-placeholder">
                         <i data-lucide="map"></i>
-                        <p>${settings.address || 'Ubicación de la barbería'}</p>
+                        <p>${Security.escapeHTML(settings.address) || 'Ubicación de la barbería'}</p>
                         <p class="text-muted" style="font-size: var(--fs-xs); margin-top: var(--space-sm);">Mapa interactivo</p>
                     </div>
                 </div>
@@ -450,7 +459,7 @@ const App = (() => {
             </div>
         `;
 
-        if (typeof lucide !== 'undefined') lucide.createIcons();
+        renderIcons();
     }
 
     function closeModal(event) {
@@ -487,7 +496,7 @@ const App = (() => {
         `;
 
         container.appendChild(toast);
-        if (typeof lucide !== 'undefined') lucide.createIcons();
+        renderIcons();
 
         // Auto-remove after 4s
         setTimeout(() => {
@@ -526,7 +535,7 @@ const App = (() => {
     }
 
     function _getInitials(name) {
-        return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+        return Security.escapeHTML(name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase());
     }
 
     // ── Public API ──
@@ -545,6 +554,8 @@ const App = (() => {
         showToast
     };
 })();
+
+window.App = App;
 
 // ── Boot ──
 document.addEventListener('DOMContentLoaded', App.init);

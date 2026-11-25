@@ -2,7 +2,11 @@
    schedule.js — Schedule Configuration (Admin)
    ============================================= */
 
-const Schedule = (() => {
+import { Storage } from './storage.js';
+import { Security } from './security.js';
+import { App } from './app.js';
+
+export const Schedule = (() => {
     const dayNames = {
         mon: 'Lunes', tue: 'Martes', wed: 'Miércoles', thu: 'Jueves',
         fri: 'Viernes', sat: 'Sábado', sun: 'Domingo'
@@ -86,7 +90,7 @@ const Schedule = (() => {
                                     <div class="block-item">
                                         <div class="block-item-info">
                                             <span class="block-item-date">${_formatDate(block.date)}</span>
-                                            ${block.reason ? `<span class="block-item-reason">— ${block.reason}</span>` : ''}
+                                            ${block.reason ? `<span class="block-item-reason">— ${Security.escapeHTML(block.reason)}</span>` : ''}
                                         </div>
                                         <button class="btn btn-ghost btn-sm" onclick="Schedule.removeBlock('${block.id}')">
                                             <i data-lucide="x"></i>
@@ -292,3 +296,5 @@ const Schedule = (() => {
         removeVacation
     };
 })();
+
+window.Schedule = Schedule;

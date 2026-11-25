@@ -2,7 +2,11 @@
    history.js — Appointment History Module
    ============================================= */
 
-const History = (() => {
+import { Storage } from './storage.js';
+import { Security } from './security.js';
+import { App } from './app.js';
+
+export const History = (() => {
     let currentFilter = 'all';
 
     // ── Main Render ──
@@ -180,3 +184,5 @@ const History = (() => {
         modifyAppointment
     };
 })();
+
+window.History = History;

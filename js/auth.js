@@ -2,7 +2,11 @@
    auth.js — Authentication Module
    ============================================= */
 
-const Auth = (() => {
+import { Storage } from './storage.js';
+import { Security } from './security.js';
+import { App } from './app.js';
+
+export const Auth = (() => {
 
     // ── Render Login Page ──
     function renderLogin() {
@@ -132,11 +136,9 @@ const Auth = (() => {
             return;
         }
 
-        const inputHash = await Security.hashPassword(passwordInput);
         const syncHash = Security.hashPasswordSync(passwordInput);
 
-        // Support both hashed and legacy string comparison
-        if (user.password !== inputHash && user.password !== syncHash && user.password !== passwordInput) {
+        if (user.password !== syncHash) {
             App.showToast('error', 'Error', 'Credenciales incorrectas');
             return;
         }
@@ -236,3 +238,6 @@ const Auth = (() => {
         logout
     };
 })();
+
+// Exposed for inline event handlers rendered via innerHTML (App.navigate(), onclick="Auth.x()")
+window.Auth = Auth;

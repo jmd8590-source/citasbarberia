@@ -2,7 +2,13 @@
    admin.js — Admin Panel Module
    ============================================= */
 
-const Admin = (() => {
+import QRCode from 'qrcode';
+import { renderIcons } from './icons.js';
+import { Storage } from './storage.js';
+import { Security } from './security.js';
+import { App } from './app.js';
+
+export const Admin = (() => {
     let agendaDate = new Date().toISOString().split('T')[0];
     let agendaMonth = new Date().getMonth();
     let agendaYear = new Date().getFullYear();
@@ -120,8 +126,8 @@ const Admin = (() => {
                             <div class="today-appointment-item" onclick="Admin.viewAppointment('${appt.id}')">
                                 <div class="today-appointment-time">${appt.time}</div>
                                 <div class="today-appointment-info">
-                                    <h4>${user ? user.name : 'Cliente'}</h4>
-                                    <p>${svc ? svc.name : 'Servicio'}</p>
+                                    <h4>${user ? Security.escapeHTML(user.name) : 'Cliente'}</h4>
+                                    <p>${svc ? Security.escapeHTML(svc.name) : 'Servicio'}</p>
                                 </div>
                                 <span class="badge badge-warning">Pendiente</span>
                             </div>
@@ -383,29 +389,29 @@ const Admin = (() => {
                     <form onsubmit="Admin.saveSettings(event)">
                         <div class="form-group">
                             <label class="form-label">Nombre del negocio</label>
-                            <input type="text" id="setShopName" class="form-input" value="${settings.shopName || ''}">
+                            <input type="text" id="setShopName" class="form-input" value="${Security.escapeHTML(settings.shopName || '')}">
                         </div>
                         <div class="form-group">
                             <label class="form-label">Dirección</label>
-                            <input type="text" id="setAddress" class="form-input" value="${settings.address || ''}">
+                            <input type="text" id="setAddress" class="form-input" value="${Security.escapeHTML(settings.address || '')}">
                         </div>
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-md);">
                             <div class="form-group">
                                 <label class="form-label">Teléfono</label>
-                                <input type="tel" id="setPhone" class="form-input" value="${settings.phone || ''}">
+                                <input type="tel" id="setPhone" class="form-input" value="${Security.escapeHTML(settings.phone || '')}">
                             </div>
                             <div class="form-group">
                                 <label class="form-label">Email</label>
-                                <input type="email" id="setEmail" class="form-input" value="${settings.email || ''}">
+                                <input type="email" id="setEmail" class="form-input" value="${Security.escapeHTML(settings.email || '')}">
                             </div>
                         </div>
                         <div class="form-group">
                             <label class="form-label">Instagram</label>
-                            <input type="text" id="setInstagram" class="form-input" value="${settings.instagram || ''}">
+                            <input type="text" id="setInstagram" class="form-input" value="${Security.escapeHTML(settings.instagram || '')}">
                         </div>
                         <div class="form-group">
                             <label class="form-label">Descripción</label>
-                            <textarea id="setDescription" class="form-textarea" rows="3">${settings.description || ''}</textarea>
+                            <textarea id="setDescription" class="form-textarea" rows="3">${Security.escapeHTML(settings.description || '')}</textarea>
                         </div>
                         <div style="display: flex; justify-content: flex-end;">
                             <button type="submit" class="btn btn-primary">
@@ -484,11 +490,11 @@ const Admin = (() => {
             <div class="modal-body">
                 <div style="display: flex; align-items: center; gap: var(--space-md); margin-bottom: var(--space-lg);">
                     <div class="avatar avatar-lg">
-                        ${user && user.avatar ? `<img src="${user.avatar}" alt="">` : (user ? _getInitials(user.name) : '?')}
+                        ${user && user.avatar && Security.isSafeImageDataUrl(user.avatar) ? `<img src="${user.avatar}" alt="">` : (user ? _getInitials(user.name) : '?')}
                     </div>
                     <div>
-                        <h4>${user ? user.name : 'Cliente desconocido'}</h4>
-                        <p class="text-secondary" style="font-size: var(--fs-sm);">${user ? user.email : ''}</p>
+                        <h4>${user ? Security.escapeHTML(user.name) : 'Cliente desconocido'}</h4>
+                        <p class="text-secondary" style="font-size: var(--fs-sm);">${user ? Security.escapeHTML(user.email) : ''}</p>
                     </div>
                 </div>
                 <div class="booking-summary" style="border: none; padding: 0;">
@@ -562,11 +568,11 @@ const Admin = (() => {
             <div class="modal-body">
                 <div style="text-align: center; margin-bottom: var(--space-lg);">
                     <div class="avatar avatar-xl" style="margin: 0 auto var(--space-md);">
-                        ${client.avatar ? `<img src="${client.avatar}" alt="">` : _getInitials(client.name)}
+                        ${client.avatar && Security.isSafeImageDataUrl(client.avatar) ? `<img src="${client.avatar}" alt="">` : _getInitials(client.name)}
                     </div>
-                    <h3>${client.name}</h3>
-                    <p class="text-secondary" style="font-size: var(--fs-sm);">${client.email}</p>
-                    ${client.phone ? `<p class="text-muted" style="font-size: var(--fs-sm);">${client.phone}</p>` : ''}
+                    <h3>${Security.escapeHTML(client.name)}</h3>
+                    <p class="text-secondary" style="font-size: var(--fs-sm);">${Security.escapeHTML(client.email)}</p>
+                    ${client.phone ? `<p class="text-muted" style="font-size: var(--fs-sm);">${Security.escapeHTML(client.phone)}</p>` : ''}
                 </div>
 
                 <div class="divider"></div>
@@ -593,7 +599,7 @@ const Admin = (() => {
                 <div class="divider"></div>
                 <h4 style="margin-bottom: var(--space-md);">Galería (${gallery.length})</h4>
                 <div style="display: flex; gap: var(--space-sm); flex-wrap: wrap;">
-                    ${gallery.map(g => `
+                    ${gallery.filter(g => Security.isSafeImageDataUrl(g.imageData)).map(g => `
                         <img src="${g.imageData}" alt="" style="width: 60px; height: 60px; object-fit: cover; border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
                     `).join('')}
                 </div>
@@ -687,7 +693,7 @@ const Admin = (() => {
 
     // ── Helpers ──
     function _getInitials(name) {
-        return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+        return Security.escapeHTML(name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase());
     }
 
     function _formatDateFull(dateStr) {
@@ -715,24 +721,19 @@ const Admin = (() => {
 
     function _renderQR(container, url) {
         container.innerHTML = '';
-        if (typeof QRCode !== 'undefined') {
-            try {
-                new QRCode(container, {
-                    text: url,
-                    width: 140,
-                    height: 140,
-                    colorDark: "#0F172A",
-                    colorLight: "#FFFFFF",
-                    correctLevel: QRCode.CorrectLevel.H
-                });
-                return;
-            } catch (e) {
-                console.warn('QRCode error, using SVG fallback:', e);
+        const canvas = document.createElement('canvas');
+        container.appendChild(canvas);
+        QRCode.toCanvas(canvas, url, {
+            width: 140,
+            margin: 1,
+            color: { dark: '#0F172A', light: '#FFFFFF' },
+            errorCorrectionLevel: 'H'
+        }, (err) => {
+            if (err) {
+                console.error('QR generation error:', err);
+                container.innerHTML = '<p style="font-size:12px; color: var(--text-muted);">No se pudo generar el QR</p>';
             }
-        }
-        // Fallback SVG QR generator API
-        const encoded = encodeURIComponent(url);
-        container.innerHTML = `<img id="qrImageFallback" src="https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${encoded}&color=0F172A" alt="Código QR" style="width:140px; height:140px;">`;
+        });
     }
 
     function updateQRCode(url) {
@@ -812,7 +813,7 @@ const Admin = (() => {
                 </button>
             </div>
         `);
-        if (typeof lucide !== 'undefined') lucide.createIcons();
+        renderIcons();
     }
 
     // ── Public API ──
@@ -841,3 +842,5 @@ const Admin = (() => {
         _searchTimeout: null
     };
 })();
+
+window.Admin = Admin;
