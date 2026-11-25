@@ -801,6 +801,11 @@
     position: relative;
 }
 
+[data-tooltip]:hover,
+[data-tooltip]:focus-visible {
+    z-index: var(--z-dropdown);
+}
+
 [data-tooltip]::after {
     content: attr(data-tooltip);
     position: absolute;
@@ -819,6 +824,18 @@
     box-shadow: var(--shadow-md);
     border: 1px solid var(--border-color);
     z-index: var(--z-dropdown);
+}
+
+/* Variant for buttons near the top of the viewport (tooltip would be clipped opening upward) */
+[data-tooltip].tooltip-below::after {
+    bottom: auto;
+    top: calc(100% + 8px);
+    transform: translateX(-50%) translateY(-4px);
+}
+
+[data-tooltip].tooltip-below:hover::after,
+[data-tooltip].tooltip-below:focus-visible::after {
+    transform: translateX(-50%) translateY(0);
 }
 
 [data-tooltip]:hover::after {

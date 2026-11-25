@@ -2,6 +2,7 @@
    auth.js — Authentication Module
    ============================================= */
 
+import { brandLogoHTML } from './brand.js';
 import { Storage } from './storage.js';
 import { Security } from './security.js';
 import { App } from './app.js';
@@ -12,12 +13,12 @@ export const Auth = (() => {
     function renderLogin() {
         return `
         <div class="auth-container">
-            <button class="btn btn-ghost btn-icon" onclick="App.toggleTheme()" style="position: absolute; top: var(--space-lg); right: var(--space-lg); z-index: 10;" data-tooltip="Cambiar tema">
+            <button class="btn btn-ghost btn-icon tooltip-below" onclick="App.toggleTheme()" style="position: absolute; top: var(--space-lg); right: var(--space-lg); z-index: 10;" data-tooltip="Cambiar tema">
                 <i data-lucide="${App.getTheme() === 'dark' ? 'sun' : 'moon'}"></i>
             </button>
             <div class="auth-card animate-fade-in-up">
                 <div class="auth-header">
-                    <div class="auth-logo">Barber<span>Club</span></div>
+                    <div class="auth-logo">${brandLogoHTML(44)}</div>
                     <p class="auth-tagline">Estilo, precisión y actitud</p>
                 </div>
                 <div class="auth-form">
@@ -65,12 +66,12 @@ export const Auth = (() => {
     function renderRegister() {
         return `
         <div class="auth-container">
-            <button class="btn btn-ghost btn-icon" onclick="App.toggleTheme()" style="position: absolute; top: var(--space-lg); right: var(--space-lg); z-index: 10;" data-tooltip="Cambiar tema">
+            <button class="btn btn-ghost btn-icon tooltip-below" onclick="App.toggleTheme()" style="position: absolute; top: var(--space-lg); right: var(--space-lg); z-index: 10;" data-tooltip="Cambiar tema">
                 <i data-lucide="${App.getTheme() === 'dark' ? 'sun' : 'moon'}"></i>
             </button>
             <div class="auth-card animate-fade-in-up">
                 <div class="auth-header">
-                    <div class="auth-logo">Barber<span>Club</span></div>
+                    <div class="auth-logo">${brandLogoHTML(44)}</div>
                     <p class="auth-tagline">Únete a la comunidad</p>
                 </div>
                 <div class="auth-form">

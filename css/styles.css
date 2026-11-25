@@ -4,38 +4,38 @@
 
 /* ── CSS Variables (Design Tokens) ── */
 :root, [data-theme="light"] {
-    /* Colors — Light & Bright Premium Theme */
-    --bg-primary: #F8FAFD;
+    /* Colors — "Blanco Perla" Premium Theme */
+    --bg-primary: #FAF8F4;
     --bg-secondary: #FFFFFF;
     --bg-card: #FFFFFF;
-    --bg-card-hover: #F1F5F9;
-    --bg-input: #F8FAFC;
-    --bg-elevated: #E2E8F0;
-    --border-color: #E2E8F0;
-    --border-light: #CBD5E1;
+    --bg-card-hover: #F3EFE6;
+    --bg-input: #F7F4EE;
+    --bg-elevated: #EFE9DD;
+    --border-color: #E8E2D4;
+    --border-light: #D9D0BC;
 
-    /* Accent — Cheerful Amber / Warm Gold Copper */
-    --accent: #D97706;
-    --accent-light: #F59E0B;
-    --accent-dark: #B45309;
-    --accent-glow: rgba(217, 119, 6, 0.1);
-    --accent-glow-strong: rgba(217, 119, 6, 0.22);
-    --gold: #F59E0B;
-    --gold-dark: #D97706;
+    /* Accent — Deep Gold (contrast-safe for text/buttons) + bright gold for decoration */
+    --accent: #8A6412;
+    --accent-light: #B8860B;
+    --accent-dark: #6B4C0D;
+    --accent-glow: rgba(138, 100, 18, 0.1);
+    --accent-glow-strong: rgba(138, 100, 18, 0.22);
+    --gold: #C89A4A;
+    --gold-dark: #8A6412;
 
-    /* Text — Crisp & High Contrast Slate */
-    --text-primary: #0F172A;
-    --text-secondary: #475569;
-    --text-muted: #64748B;
+    /* Text — Warm near-black, high contrast on pearl */
+    --text-primary: #18160F;
+    --text-secondary: #5C5547;
+    --text-muted: #847C6C;
     --text-on-accent: #FFFFFF;
 
     /* Status Colors */
-    --success: #059669;
-    --success-bg: rgba(5, 150, 105, 0.1);
-    --warning: #D97706;
-    --warning-bg: rgba(217, 119, 6, 0.1);
-    --error: #DC2626;
-    --error-bg: rgba(220, 38, 38, 0.1);
+    --success: #15803D;
+    --success-bg: rgba(21, 128, 61, 0.1);
+    --warning: #C2672B;
+    --warning-bg: rgba(194, 103, 43, 0.1);
+    --error: #C0362C;
+    --error-bg: rgba(192, 54, 44, 0.1);
     --info: #2563EB;
     --info-bg: rgba(37, 99, 235, 0.1);
 
@@ -68,11 +68,11 @@
     --radius-xl: 20px;
     --radius-full: 50%;
 
-    /* Shadows — Soft & Premium Layered */
-    --shadow-sm: 0 2px 5px rgba(15, 23, 42, 0.05), 0 1px 2px rgba(15, 23, 42, 0.03);
-    --shadow-md: 0 6px 16px -2px rgba(15, 23, 42, 0.08), 0 2px 6px -1px rgba(15, 23, 42, 0.04);
-    --shadow-lg: 0 16px 36px -4px rgba(15, 23, 42, 0.1), 0 6px 14px -2px rgba(15, 23, 42, 0.05);
-    --shadow-accent: 0 8px 24px -2px rgba(217, 119, 6, 0.28);
+    /* Shadows — Soft pearl-tinted, premium layered */
+    --shadow-sm: 0 2px 5px rgba(24, 22, 15, 0.05), 0 1px 2px rgba(24, 22, 15, 0.03);
+    --shadow-md: 0 6px 16px -2px rgba(24, 22, 15, 0.08), 0 2px 6px -1px rgba(24, 22, 15, 0.04);
+    --shadow-lg: 0 16px 36px -4px rgba(24, 22, 15, 0.1), 0 6px 14px -2px rgba(24, 22, 15, 0.05);
+    --shadow-accent: 0 8px 24px -2px rgba(138, 100, 18, 0.25);
 
     /* Transitions */
     --transition-fast: 150ms ease;
@@ -96,46 +96,46 @@
 }
 
 [data-theme="dark"] {
-    /* Colors — Dark & Gold Premium Theme */
-    --bg-primary: #0A0A0A;
-    --bg-secondary: #111111;
-    --bg-card: #1A1A1A;
-    --bg-card-hover: #222222;
-    --bg-input: #1E1E1E;
-    --bg-elevated: #252525;
-    --border-color: #2A2A2A;
-    --border-light: #333333;
+    /* Colors — "Negro Brillante" Premium Theme */
+    --bg-primary: #0A0A0B;
+    --bg-secondary: #121214;
+    --bg-card: #18181B;
+    --bg-card-hover: #202023;
+    --bg-input: #1C1C1F;
+    --bg-elevated: #242428;
+    --border-color: #262629;
+    --border-light: #35353A;
 
-    /* Accent — Gold / Bronze */
-    --accent: #C8956C;
-    --accent-light: #D4A574;
-    --accent-dark: #B07D55;
-    --accent-glow: rgba(200, 149, 108, 0.15);
-    --accent-glow-strong: rgba(200, 149, 108, 0.3);
-    --gold: #D4A574;
+    /* Accent — Bright gold (reads well on near-black) */
+    --accent: #D9B35C;
+    --accent-light: #E6C27A;
+    --accent-dark: #B8860B;
+    --accent-glow: rgba(217, 179, 92, 0.14);
+    --accent-glow-strong: rgba(217, 179, 92, 0.28);
+    --gold: #D9B35C;
     --gold-dark: #B8860B;
 
-    /* Text */
-    --text-primary: #F5F0EB;
-    --text-secondary: #A89F95;
-    --text-muted: #6B6560;
-    --text-on-accent: #0A0A0A;
+    /* Text — Warm pearl on near-black */
+    --text-primary: #F5F1E8;
+    --text-secondary: #B8B2A6;
+    --text-muted: #7A7468;
+    --text-on-accent: #15130F;
 
     /* Status Colors */
-    --success: #4CAF50;
-    --success-bg: rgba(76, 175, 80, 0.12);
-    --warning: #FF9800;
-    --warning-bg: rgba(255, 152, 0, 0.12);
-    --error: #EF5350;
-    --error-bg: rgba(239, 83, 80, 0.12);
-    --info: #42A5F5;
-    --info-bg: rgba(66, 165, 245, 0.12);
+    --success: #4ADE80;
+    --success-bg: rgba(74, 222, 128, 0.12);
+    --warning: #E8954A;
+    --warning-bg: rgba(232, 149, 74, 0.12);
+    --error: #F2675C;
+    --error-bg: rgba(242, 103, 92, 0.12);
+    --info: #60A5FA;
+    --info-bg: rgba(96, 165, 250, 0.12);
 
-    /* Shadows */
-    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
-    --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
-    --shadow-accent: 0 4px 20px rgba(200, 149, 108, 0.2);
+    /* Shadows — glossy black: deep outer shadow + faint gold-tinted glow */
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.45);
+    --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.03) inset;
+    --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.04) inset;
+    --shadow-accent: 0 4px 24px rgba(217, 179, 92, 0.22);
 }
 
 /* ── Reset ── */
@@ -285,7 +285,7 @@ h4 { font-size: var(--fs-lg); }
     z-index: var(--z-sticky);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    background: rgba(255, 255, 255, 0.88);
+    background: rgba(250, 248, 244, 0.88);
 }
 
 [data-theme="dark"] .app-topbar {
@@ -309,16 +309,39 @@ h4 { font-size: var(--fs-lg); }
     gap: var(--space-md);
 }
 
-.sidebar-logo {
-    font-family: var(--font-heading);
-    font-size: var(--fs-xl);
-    font-weight: 700;
-    color: var(--accent);
-    letter-spacing: -0.5px;
+/* ── Brand Logo (icon mark + wordmark) ── */
+.brand-logo {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-sm);
 }
 
-.sidebar-logo span {
+.brand-mark {
+    display: inline-flex;
+    flex-shrink: 0;
+    color: var(--accent);
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.15));
+}
+
+.brand-mark svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+.brand-word {
+    font-family: var(--font-heading);
+    font-weight: 700;
+    color: var(--accent);
+}
+
+.brand-word span {
     color: var(--text-primary);
+}
+
+.sidebar-logo {
+    font-size: var(--fs-xl);
+    letter-spacing: -0.5px;
 }
 
 .sidebar-nav {
@@ -437,7 +460,7 @@ h4 { font-size: var(--fs-lg); }
     left: 0;
     right: 0;
     height: var(--bottom-nav-height);
-    background: rgba(255, 255, 255, 0.92);
+    background: rgba(250, 248, 244, 0.92);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     border-top: 1px solid var(--border-color);

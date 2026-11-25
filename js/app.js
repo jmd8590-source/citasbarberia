@@ -2,6 +2,7 @@
    app.js — SPA Router & App Shell
    ============================================= */
 
+import { brandLogoHTML } from './brand.js';
 import { renderIcons } from './icons.js';
 import { Storage } from './storage.js';
 import { Security } from './security.js';
@@ -124,7 +125,7 @@ export const App = (() => {
             <!-- Sidebar (Desktop) -->
             <aside class="app-sidebar" id="sidebar">
                 <div class="sidebar-header">
-                    <div class="sidebar-logo">Barber<span>Club</span></div>
+                    <div class="sidebar-logo">${brandLogoHTML(32)}</div>
                 </div>
                 <nav class="sidebar-nav">
                     <div class="sidebar-section-label">${isAdmin ? 'Administración' : 'Menú'}</div>
@@ -161,7 +162,7 @@ export const App = (() => {
                         <h2 style="font-size: var(--fs-md); font-weight: 600;">${_getPageTitle()}</h2>
                     </div>
                     <div class="flex items-center gap-sm">
-                        <button class="btn btn-ghost btn-icon" onclick="App.toggleTheme()" data-tooltip="Cambiar tema">
+                        <button class="btn btn-ghost btn-icon tooltip-below" onclick="App.toggleTheme()" data-tooltip="Cambiar tema">
                             <i data-lucide="${App.getTheme() === 'dark' ? 'sun' : 'moon'}"></i>
                         </button>
                         <span class="text-secondary hide-mobile" style="font-size: var(--fs-sm);">
@@ -522,7 +523,7 @@ export const App = (() => {
         const theme = getTheme();
         document.documentElement.setAttribute('data-theme', theme);
         const metaTheme = document.querySelector('meta[name="theme-color"]');
-        if (metaTheme) metaTheme.setAttribute('content', theme === 'dark' ? '#0A0A0A' : '#F8FAFD');
+        if (metaTheme) metaTheme.setAttribute('content', theme === 'dark' ? '#0A0A0B' : '#FAF8F4');
     }
 
     function toggleTheme() {

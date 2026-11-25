@@ -39,16 +39,15 @@
 }
 
 .auth-logo {
-    font-family: var(--font-heading);
-    font-size: var(--fs-3xl);
-    font-weight: 800;
-    color: var(--accent);
-    letter-spacing: -1px;
+    display: flex;
+    justify-content: center;
     margin-bottom: var(--space-xs);
 }
 
-.auth-logo span {
-    color: var(--text-primary);
+.auth-logo .brand-word {
+    font-size: var(--fs-3xl);
+    font-weight: 800;
+    letter-spacing: -1px;
 }
 
 .auth-tagline {
