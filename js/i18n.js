@@ -156,6 +156,7 @@ const en = {
     'Tu cita ha sido creada correctamente': 'Your appointment has been created successfully',
     'No se pudo crear la reserva': 'Could not create the booking',
     'Ir al inicio': 'Go home',
+    'Ver mis citas': 'View my appointments',
 
     // ── Profile ──
     'Gestiona tu información personal': 'Manage your personal information',

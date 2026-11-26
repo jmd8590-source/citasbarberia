@@ -14,7 +14,7 @@
 
 import {
     account, tablesDB, storage, ID, Query,
-    DB_ID, BUCKET_ID, ADMIN_TEAM_ID, TABLE, MEDIA_FOLDER
+    DB_ID, BUCKET_ID, TABLE, MEDIA_FOLDER
 } from './appwrite-client.js';
 import { Security } from './security.js';
 
@@ -216,13 +216,13 @@ export const Storage = (() => {
 
             await account.create({ userId, email: cleanEmail, password, name: cleanName });
             await account.createEmailPasswordSession({ email: cleanEmail, password });
+            // Admin read/update/delete on profiles is granted at the table level (not
+            // per-row): a self-registering client isn't a member of the admins team, so
+            // Appwrite rejects any attempt to assign that role on a row it creates.
             await tablesDB.createRow({
                 databaseId: DB_ID, tableId: TABLE.PROFILES, rowId: userId,
                 data: { name: cleanName, email: cleanEmail, phone: cleanPhone, role: 'client' },
-                permissions: [
-                    `read("user:${userId}")`, `update("user:${userId}")`,
-                    `read("team:${ADMIN_TEAM_ID}")`, `update("team:${ADMIN_TEAM_ID}")`
-                ]
+                permissions: [`read("user:${userId}")`, `update("user:${userId}")`]
             });
 
             const authUser = await account.get();
@@ -281,11 +281,10 @@ export const Storage = (() => {
     const Appointments = {
         getAll: () => cache.appointments,
         getById: (id) => cache.appointments.find(a => a.id === id) || null,
+        // Admin read/update/delete on appointments and slots is granted at the table
+        // level (not per-row): a booking client isn't a member of the admins team, so
+        // Appwrite rejects any attempt to assign that role on a row it creates.
         create: async (appt) => {
-            const permissions = [
-                `read("user:${appt.userId}")`, `update("user:${appt.userId}")`,
-                `read("team:${ADMIN_TEAM_ID}")`, `update("team:${ADMIN_TEAM_ID}")`
-            ];
             const row = await tablesDB.createRow({
                 databaseId: DB_ID, tableId: TABLE.APPOINTMENTS, rowId: ID.unique(),
                 data: {
@@ -293,7 +292,7 @@ export const Storage = (() => {
                     date: appt.date, time: appt.time,
                     status: appt.status || 'pending', notes: appt.notes || ''
                 },
-                permissions
+                permissions: [`read("user:${appt.userId}")`, `update("user:${appt.userId}")`]
             });
             const normalized = _normalizeRow(row);
 
@@ -304,7 +303,7 @@ export const Storage = (() => {
             const slotRow = await tablesDB.createRow({
                 databaseId: DB_ID, tableId: TABLE.SLOTS, rowId: ID.unique(),
                 data: { date: appt.date, time: appt.time, appointmentId: normalized.id, duration: service ? service.duration : 30 },
-                permissions: [`delete("user:${appt.userId}")`, `delete("team:${ADMIN_TEAM_ID}")`, `update("team:${ADMIN_TEAM_ID}")`]
+                permissions: [`delete("user:${appt.userId}")`]
             });
 
             cache.appointments.push(normalized);
@@ -501,15 +500,15 @@ export const Storage = (() => {
         getByUser: (userId) => cache.currentUser && cache.currentUser.id === userId
             ? cache.gallery
             : [], // admin fetches another client's gallery on demand — see fetchGalleryForClient
+        // Admin read/delete on gallery rows and files is granted at the table/bucket
+        // level (not per-row/per-file): a client isn't a member of the admins team, so
+        // Appwrite rejects any attempt to assign that role on a row/file it creates.
         create: async (item) => {
             const user = cache.currentUser;
             const row = await tablesDB.createRow({
                 databaseId: DB_ID, tableId: TABLE.GALLERY, rowId: ID.unique(),
                 data: { userId: item.userId, fileId: item.fileId, caption: item.caption || '', date: item.date },
-                permissions: [
-                    `read("user:${item.userId}")`, `delete("user:${item.userId}")`,
-                    `read("team:${ADMIN_TEAM_ID}")`, `delete("team:${ADMIN_TEAM_ID}")`
-                ]
+                permissions: [`read("user:${item.userId}")`, `delete("user:${item.userId}")`]
             });
             const normalized = { ..._normalizeRow(row), imageData: _avatarUrl(item.fileId) };
             if (user && user.id === item.userId) cache.gallery.push(normalized);
@@ -521,7 +520,7 @@ export const Storage = (() => {
             const fileId = ID.unique();
             await storage.createFile({
                 bucketId: BUCKET_ID, fileId, file,
-                permissions: [`read("user:${user.id}")`, `delete("user:${user.id}")`, `read("team:${ADMIN_TEAM_ID}")`],
+                permissions: [`read("user:${user.id}")`, `delete("user:${user.id}")`],
                 folder: MEDIA_FOLDER.GALLERY
             });
             return Gallery.create({
