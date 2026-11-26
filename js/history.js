@@ -149,7 +149,7 @@ export const History = (() => {
         `);
     }
 
-    function confirmCancel(apptId) {
+    async function confirmCancel(apptId) {
         const user = Storage.Session.getCurrentUser();
         const appt = Storage.Appointments.getById(apptId);
 
@@ -160,18 +160,18 @@ export const History = (() => {
             return;
         }
 
-        Storage.Appointments.cancel(apptId);
+        await Storage.Appointments.cancel(apptId);
         App.closeModal();
         App.showToast('info', t('Cita cancelada'), t('Tu cita ha sido cancelada correctamente'));
         App.renderPage();
     }
 
-    function modifyAppointment(apptId) {
+    async function modifyAppointment(apptId) {
         const appt = Storage.Appointments.getById(apptId);
         if (!appt) return;
 
         // Cancel the current and redirect to booking with pre-selected service
-        Storage.Appointments.cancel(apptId);
+        await Storage.Appointments.cancel(apptId);
         App.showToast('info', t('Cita cancelada'), t('Reserva una nueva cita con los datos que prefieras'));
         App.navigate('booking');
     }

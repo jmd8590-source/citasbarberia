@@ -421,7 +421,7 @@ export const Booking = (() => {
         renderIcons();
     }
 
-    function confirmBooking() {
+    async function confirmBooking() {
         const user = Storage.Session.getCurrentUser();
         if (!user) {
             App.showToast('error', t('Error'), t('Debes iniciar sesión'));
@@ -439,13 +439,18 @@ export const Booking = (() => {
         }
 
         // Create appointment
-        Storage.Appointments.create({
-            userId: user.id,
-            serviceId: state.selectedService,
-            date: state.selectedDate,
-            time: state.selectedTime,
-            notes: ''
-        });
+        try {
+            await Storage.Appointments.create({
+                userId: user.id,
+                serviceId: state.selectedService,
+                date: state.selectedDate,
+                time: state.selectedTime,
+                notes: ''
+            });
+        } catch (err) {
+            App.showToast('error', t('Error'), err.message || t('No se pudo crear la reserva'));
+            return;
+        }
 
         App.showToast('success', t('¡Reserva confirmada!'), t('Tu cita ha sido creada correctamente'));
 

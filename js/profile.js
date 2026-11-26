@@ -7,6 +7,7 @@ import { Storage } from './storage.js';
 import { Security } from './security.js';
 import { App } from './app.js';
 import { t } from './i18n.js';
+import { account } from './appwrite-client.js';
 
 export const Profile = (() => {
 
@@ -30,7 +31,7 @@ export const Profile = (() => {
             <div class="profile-header">
                 <div class="profile-avatar-wrapper">
                     <div class="avatar avatar-2xl">
-                        ${user.avatar && Security.isSafeImageDataUrl(user.avatar)
+                        ${user.avatar
                             ? `<img src="${user.avatar}" alt="${Security.escapeHTML(user.name)}">`
                             : _getInitials(user.name)
                         }
@@ -86,9 +87,10 @@ export const Profile = (() => {
                 <div class="form-group">
                     <label class="form-label" for="profileEmail">${t('Email')}</label>
                     <div class="form-input-icon">
-                        <input type="email" id="profileEmail" class="form-input" value="${Security.escapeHTML(user.email)}" required>
+                        <input type="email" id="profileEmail" class="form-input" value="${Security.escapeHTML(user.email)}" disabled>
                         <i data-lucide="mail"></i>
                     </div>
+                    <span class="form-hint">${t('Contacta con soporte para cambiar tu email')}</span>
                 </div>
                 <div class="form-group">
                     <label class="form-label" for="profilePhone">${t('Teléfono')}</label>
@@ -99,6 +101,13 @@ export const Profile = (() => {
                 </div>
                 <div class="divider"></div>
                 <h4 style="margin-bottom: var(--space-md);">${t('Cambiar contraseña')}</h4>
+                <div class="form-group">
+                    <label class="form-label" for="profileCurrentPassword">${t('Contraseña actual')}</label>
+                    <div class="form-input-icon">
+                        <input type="password" id="profileCurrentPassword" class="form-input" placeholder="${t('Solo si vas a cambiarla')}" autocomplete="current-password">
+                        <i data-lucide="lock"></i>
+                    </div>
+                </div>
                 <div class="form-group">
                     <label class="form-label" for="profilePassword">${t('Nueva contraseña')}</label>
                     <div class="form-input-icon">
@@ -151,7 +160,7 @@ export const Profile = (() => {
                     <span>${t('Añadir foto')}</span>
                     <input type="file" id="galleryUpload" accept="image/*" style="display:none" onchange="Profile.uploadGalleryPhoto(event)">
                 </label>
-                ${gallery.filter(item => Security.isSafeImageDataUrl(item.imageData)).map(item => `
+                ${gallery.map(item => `
                     <div class="gallery-item" onclick="Profile.viewGalleryItem('${item.id}')">
                         <img src="${item.imageData}" alt="${Security.escapeHTML(item.caption) || t('Foto')}">
                         <div class="gallery-item-overlay">
@@ -182,21 +191,16 @@ export const Profile = (() => {
         renderIcons();
     }
 
-    function saveProfile(e) {
+    async function saveProfile(e) {
         e.preventDefault();
         const user = Storage.Session.getCurrentUser();
         const name = Security.sanitizeString(document.getElementById('profileName').value, 100);
-        const email = document.getElementById('profileEmail').value.trim().toLowerCase();
         const phone = Security.sanitizeString(document.getElementById('profilePhone').value, 20);
+        const currentPassword = document.getElementById('profileCurrentPassword').value;
         const password = document.getElementById('profilePassword').value;
 
         if (!name || name.length < 2) {
             App.showToast('error', t('Error'), t('Introduce un nombre válido'));
-            return;
-        }
-
-        if (!Security.validateEmail(email)) {
-            App.showToast('error', t('Error'), t('El formato del email no es válido'));
             return;
         }
 
@@ -205,27 +209,30 @@ export const Profile = (() => {
             return;
         }
 
-        // Check email uniqueness
-        const existing = Storage.Users.getByEmail(email);
-        if (existing && existing.id !== user.id) {
-            App.showToast('error', t('Error'), t('Ese email ya está en uso'));
-            return;
-        }
-
-        const updates = { name, email, phone };
-        if (password && password.length >= 6) {
+        const updates = { name, phone };
+        if (password) {
+            if (password.length < 6) {
+                App.showToast('error', t('Error'), t('La contraseña debe tener al menos 6 caracteres'));
+                return;
+            }
+            if (!currentPassword) {
+                App.showToast('error', t('Error'), t('Introduce tu contraseña actual para cambiarla'));
+                return;
+            }
             updates.password = password;
-        } else if (password && password.length > 0 && password.length < 6) {
-            App.showToast('error', t('Error'), t('La contraseña debe tener al menos 6 caracteres'));
-            return;
+            updates.currentPassword = currentPassword;
         }
 
-        Storage.Users.update(user.id, updates);
-        App.showToast('success', t('Guardado'), t('Tu perfil ha sido actualizado'));
-        App.refreshNav();
+        try {
+            await Storage.Users.update(user.id, updates);
+            App.showToast('success', t('Guardado'), t('Tu perfil ha sido actualizado'));
+            App.refreshNav();
+        } catch (err) {
+            App.showToast('error', t('Error'), err.message || t('No se pudieron guardar los cambios'));
+        }
     }
 
-    function uploadAvatar(e) {
+    async function uploadAvatar(e) {
         const file = e.target.files[0];
         if (!file) return;
         if (!file.type || !file.type.startsWith('image/')) {
@@ -237,21 +244,16 @@ export const Profile = (() => {
             return;
         }
 
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-            if (!Security.isSafeImageDataUrl(ev.target.result)) {
-                App.showToast('error', t('Error'), t('Formato de imagen no soportado'));
-                return;
-            }
-            const user = Storage.Session.getCurrentUser();
-            Storage.Users.update(user.id, { avatar: ev.target.result });
+        try {
+            await Storage.Users.updateAvatar(file);
             App.showToast('success', t('Avatar actualizado'), t('Tu foto de perfil ha sido cambiada'));
             App.renderPage();
-        };
-        reader.readAsDataURL(file);
+        } catch (err) {
+            App.showToast('error', t('Error'), err.message || t('No se pudo subir la imagen'));
+        }
     }
 
-    function uploadGalleryPhoto(e) {
+    async function uploadGalleryPhoto(e) {
         const file = e.target.files[0];
         if (!file) return;
         if (!file.type || !file.type.startsWith('image/')) {
@@ -266,23 +268,13 @@ export const Profile = (() => {
         const rawCaption = prompt(t('Añade una descripción (opcional):')) || '';
         const caption = Security.sanitizeString(rawCaption, 100);
 
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-            if (!Security.isSafeImageDataUrl(ev.target.result)) {
-                App.showToast('error', t('Error'), t('Formato de imagen no soportado'));
-                return;
-            }
-            const user = Storage.Session.getCurrentUser();
-            Storage.Gallery.create({
-                userId: user.id,
-                imageData: ev.target.result,
-                caption: caption,
-                date: new Date().toISOString().split('T')[0]
-            });
+        try {
+            await Storage.Gallery.uploadPhoto(file, caption);
             App.showToast('success', t('Foto añadida'), t('La foto se ha guardado en tu galería'));
             showTab('gallery');
-        };
-        reader.readAsDataURL(file);
+        } catch (err) {
+            App.showToast('error', t('Error'), err.message || t('No se pudo subir la imagen'));
+        }
     }
 
     function viewGalleryItem(itemId) {
@@ -297,7 +289,7 @@ export const Profile = (() => {
                 </button>
             </div>
             <div class="modal-body" style="padding:0;">
-                ${Security.isSafeImageDataUrl(item.imageData) ? `<img src="${item.imageData}" alt="${Security.escapeHTML(item.caption || '')}" style="width:100%; border-radius: 0 0 var(--radius-lg) var(--radius-lg);">` : ''}
+                ${item.imageData ? `<img src="${item.imageData}" alt="${Security.escapeHTML(item.caption || '')}" style="width:100%; border-radius: 0 0 var(--radius-lg) var(--radius-lg);">` : ''}
             </div>
             <div class="modal-footer">
                 <button class="btn btn-danger btn-sm" onclick="Profile.deleteGalleryItem('${item.id}')">
@@ -307,8 +299,8 @@ export const Profile = (() => {
         `);
     }
 
-    function deleteGalleryItem(itemId) {
-        Storage.Gallery.remove(itemId);
+    async function deleteGalleryItem(itemId) {
+        await Storage.Gallery.remove(itemId);
         App.closeModal();
         App.showToast('info', t('Eliminada'), t('La foto ha sido eliminada'));
         showTab('gallery');
@@ -323,10 +315,9 @@ export const Profile = (() => {
         const user = Storage.Session.getCurrentUser();
         if (!user) return;
 
-        const { password, ...safeUser } = user; // never export the password hash
         const exportData = {
             exportedAt: new Date().toISOString(),
-            profile: safeUser,
+            profile: user,
             appointments: Storage.Appointments.getByUser(user.id),
             gallery: Storage.Gallery.getByUser(user.id)
         };
@@ -367,18 +358,21 @@ export const Profile = (() => {
         `);
     }
 
-    function deleteAccount() {
+    async function deleteAccount() {
         const user = Storage.Session.getCurrentUser();
         if (!user) return;
 
-        Storage.Appointments.getByUser(user.id).forEach(a => Storage.Appointments.remove(a.id));
-        Storage.Gallery.getByUser(user.id).forEach(g => Storage.Gallery.remove(g.id));
-        Storage.Users.remove(user.id);
-        Storage.Session.clear();
+        try {
+            await Storage.Users.remove(user.id);
+            await account.deleteSessions().catch(() => {});
+            Storage.Session.clear();
 
-        App.closeModal();
-        App.showToast('success', t('Cuenta eliminada'), t('Tu cuenta y tus datos han sido eliminados'));
-        App.navigate('login');
+            App.closeModal();
+            App.showToast('success', t('Cuenta eliminada'), t('Tu cuenta y tus datos han sido eliminados'));
+            App.navigate('login');
+        } catch (err) {
+            App.showToast('error', t('Error'), err.message || t('No se pudo eliminar la cuenta'));
+        }
     }
 
     // ── Public API ──

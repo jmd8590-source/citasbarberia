@@ -140,14 +140,14 @@ export const Schedule = (() => {
     }
 
     // ── Actions ──
-    function toggleDay(day, enabled) {
+    async function toggleDay(day, enabled) {
         const config = Storage.getScheduleConfig();
         config.workDays[day] = enabled;
-        Storage.updateScheduleConfig(config);
+        await Storage.updateScheduleConfig(config);
         App.renderPage();
     }
 
-    function updateHours() {
+    async function updateHours() {
         const config = Storage.getScheduleConfig();
         // Use first active day's hours as default
         const firstActiveDay = dayOrder.find(d => config.workDays[d]);
@@ -159,12 +159,12 @@ export const Schedule = (() => {
                 config.hours.end = endEl.value;
             }
         }
-        Storage.updateScheduleConfig(config);
+        await Storage.updateScheduleConfig(config);
         App.showToast('success', t('Guardado'), t('Horarios actualizados'));
     }
 
-    function updateSlotDuration(value) {
-        Storage.updateScheduleConfig({ slotDuration: parseInt(value) });
+    async function updateSlotDuration(value) {
+        await Storage.updateScheduleConfig({ slotDuration: parseInt(value) });
         App.showToast('success', t('Guardado'), t('Duración de slots actualizada'));
     }
 
@@ -198,7 +198,7 @@ export const Schedule = (() => {
         `);
     }
 
-    function saveBlock(e) {
+    async function saveBlock(e) {
         e.preventDefault();
         const date = document.getElementById('blockDate').value;
         const reason = Security.sanitizeString(document.getElementById('blockReason').value, 150);
@@ -208,14 +208,14 @@ export const Schedule = (() => {
             return;
         }
 
-        Storage.addBlock({ date, reason });
+        await Storage.addBlock({ date, reason });
         App.closeModal();
         App.showToast('success', t('Bloqueado'), t('El día {date} ha sido bloqueado', { date: _formatDate(date) }));
         App.renderPage();
     }
 
-    function removeBlock(blockId) {
-        Storage.removeBlock(blockId);
+    async function removeBlock(blockId) {
+        await Storage.removeBlock(blockId);
         App.showToast('info', t('Eliminado'), t('El bloqueo ha sido eliminado'));
         App.renderPage();
     }
@@ -256,7 +256,7 @@ export const Schedule = (() => {
         `);
     }
 
-    function saveVacation(e) {
+    async function saveVacation(e) {
         e.preventDefault();
         const startDate = document.getElementById('vacStart').value;
         const endDate = document.getElementById('vacEnd').value;
@@ -267,14 +267,14 @@ export const Schedule = (() => {
             return;
         }
 
-        Storage.addVacation({ startDate, endDate, reason });
+        await Storage.addVacation({ startDate, endDate, reason });
         App.closeModal();
         App.showToast('success', t('Guardado'), t('Las vacaciones han sido registradas'));
         App.renderPage();
     }
 
-    function removeVacation(vacationId) {
-        Storage.removeVacation(vacationId);
+    async function removeVacation(vacationId) {
+        await Storage.removeVacation(vacationId);
         App.showToast('info', t('Eliminado'), t('Las vacaciones han sido eliminadas'));
         App.renderPage();
     }

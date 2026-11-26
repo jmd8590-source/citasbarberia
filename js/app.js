@@ -51,10 +51,16 @@ export const App = (() => {
     }
 
     // ── Initialize ──
-    function init() {
-        Storage.seedDemoData();
+    async function init() {
         applyTheme();
         setLang(getLang());
+
+        // Resolve any existing Appwrite session and hydrate the data cache
+        // *before* the first route renders, so every page's synchronous
+        // Storage.* reads already have data to return. A hydrate failure here
+        // (e.g. transient network issue) shouldn't prevent the app from booting
+        // to the login screen — restoreSession() already reset the cache.
+        await Storage.restoreSession().catch(() => {});
 
         // Listen for hash changes
         window.addEventListener('hashchange', _handleRoute);
@@ -158,7 +164,7 @@ export const App = (() => {
                 <div class="sidebar-footer">
                     <div class="sidebar-user" onclick="App.toggleUserMenu()">
                         <div class="sidebar-user-avatar">
-                            ${user.avatar && Security.isSafeImageDataUrl(user.avatar) ? `<img src="${user.avatar}" alt="">` : _getInitials(user.name)}
+                            ${user.avatar ? `<img src="${user.avatar}" alt="">` : _getInitials(user.name)}
                         </div>
                         <div class="sidebar-user-info">
                             <div class="sidebar-user-name">${Security.escapeHTML(user.name)}</div>
@@ -198,7 +204,7 @@ export const App = (() => {
                             ${t('Hola, {name}', { name: Security.escapeHTML(user.name.split(' ')[0]) })}
                         </span>
                         <div class="avatar avatar-sm" style="cursor: pointer;" onclick="${isAdmin ? '' : "App.navigate('profile')" }">
-                            ${user.avatar && Security.isSafeImageDataUrl(user.avatar) ? `<img src="${user.avatar}" alt="">` : _getInitials(user.name)}
+                            ${user.avatar ? `<img src="${user.avatar}" alt="">` : _getInitials(user.name)}
                         </div>
                     </div>
                 </header>

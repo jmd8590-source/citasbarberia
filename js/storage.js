@@ -1,156 +1,366 @@
 /* =============================================
-   storage.js — Capa de datos (localStorage)
+   storage.js — Data layer backed by Appwrite
+   ─────────────────────────────────────────────
+   Online-first with an offline-readable cache: after login (or on
+   page load with an existing session) hydrate() pulls everything the
+   current user is allowed to see into an in-memory cache. Every page
+   in the app reads that cache *synchronously* (unchanged from the
+   previous localStorage-based version), so none of the render
+   functions elsewhere in the app had to change. Writes call Appwrite
+   first and only update the cache once the server confirms — if the
+   network call fails, the cache is left untouched and the caller's
+   catch/toast runs instead of a false "saved" state.
    ============================================= */
 
+import {
+    account, tablesDB, storage, ID, Query,
+    DB_ID, BUCKET_ID, ADMIN_TEAM_ID, TABLE, MEDIA_FOLDER
+} from './appwrite-client.js';
 import { Security } from './security.js';
 
 export const Storage = (() => {
-    // Keys
-    const KEYS = {
-        USERS: 'bb_users',
-        APPOINTMENTS: 'bb_appointments',
-        SERVICES: 'bb_services',
-        SCHEDULE: 'bb_schedule',
-        GALLERY: 'bb_gallery',
-        SESSION: 'bb_session',
-        SETTINGS: 'bb_settings'
-    };
+    let cache = _emptyCache();
 
-    // ── Helpers ──
-    function _get(key) {
+    function _emptyCache() {
+        return {
+            currentUser: null,
+            isAdmin: false,
+            clients: [],
+            appointments: [],
+            slots: [],
+            services: [],
+            gallery: [],
+            scheduleConfig: null,
+            settings: null
+        };
+    }
+
+    // ── Row <-> app-shape helpers ──
+    function _normalizeRow(row) {
+        if (!row) return row;
+        const { $id, $sequence, $tableId, $databaseId, $createdAt, $updatedAt, $permissions, ...data } = row;
+        return { id: $id, createdAt: $createdAt, updatedAt: $updatedAt, ...data };
+    }
+
+    function _avatarUrl(fileId) {
+        if (!fileId) return '';
         try {
-            const data = localStorage.getItem(key);
-            return data ? JSON.parse(data) : null;
-        } catch (e) {
-            console.error(`Error reading ${key}:`, e);
-            return null;
+            return storage.getFileView({ bucketId: BUCKET_ID, fileId }).toString();
+        } catch {
+            return '';
         }
     }
 
-    function _set(key, value) {
+    const DAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+
+    function _fromScheduleRow(row) {
+        return {
+            workDays: {
+                mon: !!row.workMon, tue: !!row.workTue, wed: !!row.workWed, thu: !!row.workThu,
+                fri: !!row.workFri, sat: !!row.workSat, sun: !!row.workSun
+            },
+            hours: { start: row.hoursStart, end: row.hoursEnd },
+            slotDuration: row.slotDuration,
+            blocks: _safeParse(row.blocksJson, []),
+            vacations: _safeParse(row.vacationsJson, [])
+        };
+    }
+
+    function _toScheduleRowData(config) {
+        return {
+            workMon: !!config.workDays.mon, workTue: !!config.workDays.tue, workWed: !!config.workDays.wed,
+            workThu: !!config.workDays.thu, workFri: !!config.workDays.fri, workSat: !!config.workDays.sat,
+            workSun: !!config.workDays.sun,
+            hoursStart: config.hours.start, hoursEnd: config.hours.end,
+            slotDuration: config.slotDuration,
+            blocksJson: JSON.stringify(config.blocks || []),
+            vacationsJson: JSON.stringify(config.vacations || [])
+        };
+    }
+
+    function _safeParse(json, fallback) {
+        try { return JSON.parse(json ?? ''); } catch { return fallback; }
+    }
+
+    function _defaultSchedule() {
+        return {
+            workDays: { mon: true, tue: true, wed: true, thu: true, fri: true, sat: true, sun: false },
+            hours: { start: '09:00', end: '20:00' },
+            slotDuration: 30,
+            blocks: [],
+            vacations: []
+        };
+    }
+
+    function _defaultSettings() {
+        return {
+            shopName: 'BarberClub',
+            address: '',
+            phone: '',
+            email: '',
+            instagram: '',
+            description: ''
+        };
+    }
+
+    // ── Session bootstrap ──
+    async function restoreSession() {
+        let authUser;
         try {
-            localStorage.setItem(key, JSON.stringify(value));
-            return true;
-        } catch (e) {
-            console.error(`Error writing ${key}:`, e);
+            authUser = await account.get();
+        } catch {
+            // No valid Appwrite session — this is the normal "logged out" state.
+            cache = _emptyCache();
             return false;
         }
+        try {
+            await _loadSessionUser(authUser);
+            return true;
+        } catch (err) {
+            // A session exists but hydrating app data failed (network/permissions/bug).
+            // Surface this instead of silently pretending the user is logged out.
+            cache = _emptyCache();
+            console.error('restoreSession: failed to hydrate session data', err);
+            throw err;
+        }
     }
 
-    function _generateId() {
-        return typeof Security !== 'undefined' ? Security.generateSecureId() : Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
+    async function _loadSessionUser(authUser) {
+        let profile;
+        try {
+            profile = _normalizeRow(await tablesDB.getRow({ databaseId: DB_ID, tableId: TABLE.PROFILES, rowId: authUser.$id }));
+        } catch {
+            // First login right after registration can race the profile row creation — retry once.
+            await new Promise(r => setTimeout(r, 400));
+            profile = _normalizeRow(await tablesDB.getRow({ databaseId: DB_ID, tableId: TABLE.PROFILES, rowId: authUser.$id }));
+        }
+
+        cache.currentUser = {
+            id: authUser.$id,
+            name: profile.name || authUser.name,
+            email: profile.email || authUser.email,
+            phone: profile.phone || '',
+            role: profile.role,
+            avatarFileId: profile.avatarFileId || '',
+            avatar: _avatarUrl(profile.avatarFileId)
+        };
+        cache.isAdmin = profile.role === 'admin';
+        await hydrate();
     }
 
-    // ── Generic CRUD ──
-    function getAll(key) {
-        return _get(key) || [];
+    async function hydrate() {
+        const user = cache.currentUser;
+        if (!user) return;
+
+        const [servicesRes, slotsRes, scheduleRow, settingsRow] = await Promise.all([
+            tablesDB.listRows({ databaseId: DB_ID, tableId: TABLE.SERVICES, queries: [Query.limit(200)] }),
+            tablesDB.listRows({ databaseId: DB_ID, tableId: TABLE.SLOTS, queries: [Query.limit(2000)] }),
+            tablesDB.getRow({ databaseId: DB_ID, tableId: TABLE.SCHEDULE, rowId: 'config' }).catch(() => null),
+            tablesDB.getRow({ databaseId: DB_ID, tableId: TABLE.SETTINGS, rowId: 'config' }).catch(() => null)
+        ]);
+        cache.services = servicesRes.rows.map(_normalizeRow);
+        cache.slots = slotsRes.rows.map(_normalizeRow);
+        cache.scheduleConfig = scheduleRow ? _fromScheduleRow(_normalizeRow(scheduleRow)) : _defaultSchedule();
+        cache.settings = settingsRow ? _normalizeRow(settingsRow) : _defaultSettings();
+
+        if (cache.isAdmin) {
+            const [apptsRes, clientsRes] = await Promise.all([
+                tablesDB.listRows({ databaseId: DB_ID, tableId: TABLE.APPOINTMENTS, queries: [Query.limit(1000)] }),
+                tablesDB.listRows({ databaseId: DB_ID, tableId: TABLE.PROFILES, queries: [Query.equal('role', 'client'), Query.limit(500)] })
+            ]);
+            cache.appointments = apptsRes.rows.map(_normalizeRow);
+            cache.clients = clientsRes.rows.map(r => {
+                const p = _normalizeRow(r);
+                return { ...p, avatar: _avatarUrl(p.avatarFileId) };
+            });
+            cache.gallery = [];
+        } else {
+            const apptsRes = await tablesDB.listRows({
+                databaseId: DB_ID, tableId: TABLE.APPOINTMENTS,
+                queries: [Query.equal('userId', user.id), Query.limit(500)]
+            });
+            cache.appointments = apptsRes.rows.map(_normalizeRow);
+            cache.clients = [];
+            cache.gallery = await _fetchGalleryFor(user.id);
+        }
     }
 
-    function getById(key, id) {
-        const items = getAll(key);
-        return items.find(item => item.id === id) || null;
+    async function _fetchGalleryFor(userId) {
+        const res = await tablesDB.listRows({
+            databaseId: DB_ID, tableId: TABLE.GALLERY,
+            queries: [Query.equal('userId', userId), Query.limit(200)]
+        });
+        return res.rows.map(_normalizeRow).map(g => ({ ...g, imageData: _avatarUrl(g.fileId) }));
     }
 
-    function create(key, item) {
-        const items = getAll(key);
-        const newItem = { ...item, id: _generateId(), createdAt: new Date().toISOString() };
-        items.push(newItem);
-        _set(key, items);
-        return newItem;
-    }
-
-    function update(key, id, updates) {
-        const items = getAll(key);
-        const index = items.findIndex(item => item.id === id);
-        if (index === -1) return null;
-        items[index] = { ...items[index], ...updates, updatedAt: new Date().toISOString() };
-        _set(key, items);
-        return items[index];
-    }
-
-    function remove(key, id) {
-        const items = getAll(key);
-        const filtered = items.filter(item => item.id !== id);
-        if (filtered.length === items.length) return false;
-        _set(key, filtered);
-        return true;
-    }
-
-    function query(key, filterFn) {
-        return getAll(key).filter(filterFn);
-    }
-
-    // ── Users ──
+    // ── Users / Profiles ──
     const Users = {
-        getAll: () => getAll(KEYS.USERS),
-        getById: (id) => getById(KEYS.USERS, id),
+        getAll: () => cache.isAdmin ? cache.clients.concat(cache.currentUser ? [cache.currentUser] : []) : (cache.currentUser ? [cache.currentUser] : []),
+        getById: (id) => {
+            if (cache.currentUser && cache.currentUser.id === id) return cache.currentUser;
+            return cache.clients.find(c => c.id === id) || null;
+        },
         getByEmail: (email) => {
             if (!email) return null;
-            const cleanEmail = email.trim().toLowerCase();
-            return getAll(KEYS.USERS).find(u => u.email.toLowerCase() === cleanEmail);
+            const q = email.trim().toLowerCase();
+            if (cache.currentUser && cache.currentUser.email.toLowerCase() === q) return cache.currentUser;
+            return cache.clients.find(c => c.email.toLowerCase() === q) || null;
         },
-        create: (user) => {
-            const cleanUser = {
-                ...user,
-                name: Security.sanitizeString(user.name),
-                email: Security.sanitizeString(user.email).toLowerCase(),
-                phone: Security.sanitizeString(user.phone || ''),
-                password: Security.hashPasswordSync(user.password),
-                role: user.role === 'admin' ? 'admin' : 'client'
-            };
-            return create(KEYS.USERS, cleanUser);
+        getClients: () => cache.clients,
+        // Full registration: Appwrite Auth account + profile row + session.
+        create: async ({ name, email, phone, password }) => {
+            const cleanName = Security.sanitizeString(name, 100);
+            const cleanEmail = Security.sanitizeString(email, 255).toLowerCase();
+            const cleanPhone = Security.sanitizeString(phone || '', 20);
+            const userId = ID.unique();
+
+            await account.create({ userId, email: cleanEmail, password, name: cleanName });
+            await account.createEmailPasswordSession({ email: cleanEmail, password });
+            await tablesDB.createRow({
+                databaseId: DB_ID, tableId: TABLE.PROFILES, rowId: userId,
+                data: { name: cleanName, email: cleanEmail, phone: cleanPhone, role: 'client' },
+                permissions: [
+                    `read("user:${userId}")`, `update("user:${userId}")`,
+                    `read("team:${ADMIN_TEAM_ID}")`, `update("team:${ADMIN_TEAM_ID}")`
+                ]
+            });
+
+            const authUser = await account.get();
+            await _loadSessionUser(authUser);
+            return cache.currentUser;
         },
-        update: (id, data) => {
-            const updates = { ...data };
-            if (updates.name) updates.name = Security.sanitizeString(updates.name);
-            if (updates.email) updates.email = Security.sanitizeString(updates.email).toLowerCase();
-            if (updates.phone) updates.phone = Security.sanitizeString(updates.phone);
-            if (updates.password) updates.password = Security.hashPasswordSync(updates.password);
-            // Prevent unauthorized role modification unless explicitly admin
-            delete updates.role;
-            return update(KEYS.USERS, id, updates);
+        update: async (id, data) => {
+            const updates = {};
+            if (data.name) updates.name = Security.sanitizeString(data.name, 100);
+            if (data.phone !== undefined) updates.phone = Security.sanitizeString(data.phone, 20);
+
+            await tablesDB.updateRow({ databaseId: DB_ID, tableId: TABLE.PROFILES, rowId: id, data: updates });
+
+            if (data.password && data.password.length >= 6) {
+                await account.updatePassword({ password: data.password, oldPassword: data.currentPassword });
+            }
+            if (updates.name) await account.updateName({ name: updates.name }).catch(() => {});
+
+            if (cache.currentUser && cache.currentUser.id === id) {
+                cache.currentUser = { ...cache.currentUser, ...updates };
+            }
+            const idx = cache.clients.findIndex(c => c.id === id);
+            if (idx !== -1) cache.clients[idx] = { ...cache.clients[idx], ...updates };
+
+            return Users.getById(id);
         },
-        remove: (id) => remove(KEYS.USERS, id),
-        getClients: () => query(KEYS.USERS, u => u.role === 'client')
+        updateAvatar: async (file) => {
+            const user = cache.currentUser;
+            if (!user) throw new Error('not logged in');
+
+            const fileId = ID.unique();
+            await storage.createFile({
+                bucketId: BUCKET_ID, fileId, file,
+                permissions: [`read("users")`, `update("user:${user.id}")`, `delete("user:${user.id}")`],
+                folder: MEDIA_FOLDER.AVATARS
+            });
+
+            await tablesDB.updateRow({ databaseId: DB_ID, tableId: TABLE.PROFILES, rowId: user.id, data: { avatarFileId: fileId } });
+
+            const url = _avatarUrl(fileId);
+            cache.currentUser = { ...cache.currentUser, avatarFileId: fileId, avatar: url };
+            return cache.currentUser;
+        },
+        remove: async (id) => {
+            // Cascade: this user's appointments, slots and gallery, then their profile row.
+            const appts = Appointments.getByUser(id);
+            for (const a of appts) await Appointments.remove(a.id);
+            const photos = cache.currentUser && cache.currentUser.id === id ? cache.gallery : [];
+            for (const g of photos) await Gallery.remove(g.id);
+            await tablesDB.deleteRow({ databaseId: DB_ID, tableId: TABLE.PROFILES, rowId: id });
+            return true;
+        }
     };
 
     // ── Appointments ──
     const Appointments = {
-        getAll: () => getAll(KEYS.APPOINTMENTS),
-        getById: (id) => getById(KEYS.APPOINTMENTS, id),
-        create: (appt) => create(KEYS.APPOINTMENTS, { ...appt, status: appt.status || 'pending' }),
-        update: (id, data) => update(KEYS.APPOINTMENTS, id, data),
-        remove: (id) => remove(KEYS.APPOINTMENTS, id),
-        getByUser: (userId) => query(KEYS.APPOINTMENTS, a => a.userId === userId),
-        getByDate: (date) => query(KEYS.APPOINTMENTS, a => a.date === date),
-        getByDateRange: (startDate, endDate) => query(KEYS.APPOINTMENTS, a => a.date >= startDate && a.date <= endDate),
-        getPending: () => query(KEYS.APPOINTMENTS, a => a.status === 'pending'),
+        getAll: () => cache.appointments,
+        getById: (id) => cache.appointments.find(a => a.id === id) || null,
+        create: async (appt) => {
+            const permissions = [
+                `read("user:${appt.userId}")`, `update("user:${appt.userId}")`,
+                `read("team:${ADMIN_TEAM_ID}")`, `update("team:${ADMIN_TEAM_ID}")`
+            ];
+            const row = await tablesDB.createRow({
+                databaseId: DB_ID, tableId: TABLE.APPOINTMENTS, rowId: ID.unique(),
+                data: {
+                    userId: appt.userId, serviceId: appt.serviceId,
+                    date: appt.date, time: appt.time,
+                    status: appt.status || 'pending', notes: appt.notes || ''
+                },
+                permissions
+            });
+            const normalized = _normalizeRow(row);
+
+            // Privacy-preserving availability index: date/time/duration only — no name,
+            // service or status — so any client can block the right number of consecutive
+            // slots without being able to read who booked them or what for.
+            const service = Services.getById(appt.serviceId);
+            const slotRow = await tablesDB.createRow({
+                databaseId: DB_ID, tableId: TABLE.SLOTS, rowId: ID.unique(),
+                data: { date: appt.date, time: appt.time, appointmentId: normalized.id, duration: service ? service.duration : 30 },
+                permissions: [`delete("user:${appt.userId}")`, `delete("team:${ADMIN_TEAM_ID}")`, `update("team:${ADMIN_TEAM_ID}")`]
+            });
+
+            cache.appointments.push(normalized);
+            cache.slots.push(_normalizeRow(slotRow));
+            return normalized;
+        },
+        update: async (id, data) => {
+            const row = await tablesDB.updateRow({ databaseId: DB_ID, tableId: TABLE.APPOINTMENTS, rowId: id, data });
+            const normalized = _normalizeRow(row);
+            const idx = cache.appointments.findIndex(a => a.id === id);
+            if (idx !== -1) cache.appointments[idx] = normalized;
+            return normalized;
+        },
+        remove: async (id) => {
+            const slot = cache.slots.find(s => s.appointmentId === id);
+            if (slot) {
+                await tablesDB.deleteRow({ databaseId: DB_ID, tableId: TABLE.SLOTS, rowId: slot.id }).catch(() => {});
+                cache.slots = cache.slots.filter(s => s.id !== slot.id);
+            }
+            await tablesDB.deleteRow({ databaseId: DB_ID, tableId: TABLE.APPOINTMENTS, rowId: id });
+            cache.appointments = cache.appointments.filter(a => a.id !== id);
+            return true;
+        },
+        getByUser: (userId) => cache.appointments.filter(a => a.userId === userId),
+        getByDate: (date) => cache.appointments.filter(a => a.date === date),
+        getByDateRange: (startDate, endDate) => cache.appointments.filter(a => a.date >= startDate && a.date <= endDate),
+        getPending: () => cache.appointments.filter(a => a.status === 'pending'),
         getUpcoming: (userId) => {
             const today = new Date().toISOString().split('T')[0];
-            return query(KEYS.APPOINTMENTS, a =>
-                a.userId === userId && a.date >= today && a.status === 'pending'
-            ).sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time));
+            return cache.appointments
+                .filter(a => a.userId === userId && a.date >= today && a.status === 'pending')
+                .sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time));
         },
-        cancel: (id) => update(KEYS.APPOINTMENTS, id, { status: 'cancelled' }),
-        complete: (id) => update(KEYS.APPOINTMENTS, id, { status: 'completed' }),
-        isSlotTaken: (date, time, excludeId = null) => {
-            return getAll(KEYS.APPOINTMENTS).some(a =>
-                a.date === date && a.time === time && a.status !== 'cancelled' && a.id !== excludeId
-            );
+        cancel: async (id) => {
+            // Cancelling keeps the appointment (history) but frees the slot for others.
+            const slot = cache.slots.find(s => s.appointmentId === id);
+            if (slot) {
+                await tablesDB.deleteRow({ databaseId: DB_ID, tableId: TABLE.SLOTS, rowId: slot.id }).catch(() => {});
+                cache.slots = cache.slots.filter(s => s.id !== slot.id);
+            }
+            return Appointments.update(id, { status: 'cancelled' });
         },
+        complete: async (id) => Appointments.update(id, { status: 'completed' }),
+        isSlotTaken: (date, time) => cache.slots.some(s => s.date === date && s.time === time),
         getOccupiedSlots: (date) => {
-            const appts = query(KEYS.APPOINTMENTS, a => a.date === date && a.status !== 'cancelled');
+            // Every booked time plus however many consecutive slots its duration spans.
+            // Duration comes straight from the slots index (not from other users'
+            // appointment rows, which this user may have no permission to read).
+            const daySlots = cache.slots.filter(s => s.date === date);
+            const slotDuration = getScheduleConfig().slotDuration;
             const occupied = [];
-            appts.forEach(a => {
-                const service = Services.getById(a.serviceId);
-                if (service) {
-                    const startMinutes = _timeToMinutes(a.time);
-                    const slots = Math.ceil(service.duration / getScheduleConfig().slotDuration);
-                    for (let i = 0; i < slots; i++) {
-                        occupied.push(_minutesToTime(startMinutes + i * getScheduleConfig().slotDuration));
-                    }
-                } else {
-                    occupied.push(a.time);
+            daySlots.forEach(slot => {
+                const startMinutes = _timeToMinutes(slot.time);
+                const count = Math.ceil((slot.duration || slotDuration) / slotDuration);
+                for (let i = 0; i < count; i++) {
+                    occupied.push(_minutesToTime(startMinutes + i * slotDuration));
                 }
             });
             return occupied;
@@ -158,82 +368,97 @@ export const Storage = (() => {
     };
 
     // ── Services ──
-    // category: 'men' (Caballeros) | 'women' (Señoras) — each is an independent catalog.
     const Services = {
-        getAll: () => getAll(KEYS.SERVICES),
-        getByCategory: (category) => query(KEYS.SERVICES, s => s.category === category),
-        getActive: (category) => query(KEYS.SERVICES, s =>
-            s.active !== false && (!category || s.category === category)
-        ),
-        getById: (id) => getById(KEYS.SERVICES, id),
-        create: (service) => create(KEYS.SERVICES, {
-            ...service,
-            category: service.category === 'women' ? 'women' : 'men',
-            active: true
-        }),
-        update: (id, data) => update(KEYS.SERVICES, id, data),
-        remove: (id) => remove(KEYS.SERVICES, id),
-        toggle: (id) => {
-            const service = getById(KEYS.SERVICES, id);
-            if (service) return update(KEYS.SERVICES, id, { active: !service.active });
-            return null;
+        getAll: () => cache.services,
+        getByCategory: (category) => cache.services.filter(s => s.category === category),
+        getActive: (category) => cache.services.filter(s => s.active !== false && (!category || s.category === category)),
+        getById: (id) => cache.services.find(s => s.id === id) || null,
+        create: async (service) => {
+            const row = await tablesDB.createRow({
+                databaseId: DB_ID, tableId: TABLE.SERVICES, rowId: ID.unique(),
+                data: {
+                    category: service.category === 'women' ? 'women' : 'men',
+                    name: service.name, description: service.description || '',
+                    duration: service.duration, price: service.price,
+                    icon: service.icon || '', active: true
+                }
+            });
+            const normalized = _normalizeRow(row);
+            cache.services.push(normalized);
+            return normalized;
+        },
+        update: async (id, data) => {
+            const row = await tablesDB.updateRow({ databaseId: DB_ID, tableId: TABLE.SERVICES, rowId: id, data });
+            const normalized = _normalizeRow(row);
+            const idx = cache.services.findIndex(s => s.id === id);
+            if (idx !== -1) cache.services[idx] = normalized;
+            return normalized;
+        },
+        remove: async (id) => {
+            await tablesDB.deleteRow({ databaseId: DB_ID, tableId: TABLE.SERVICES, rowId: id });
+            cache.services = cache.services.filter(s => s.id !== id);
+            return true;
+        },
+        toggle: async (id) => {
+            const service = Services.getById(id);
+            if (!service) return null;
+            return Services.update(id, { active: !service.active });
         }
     };
 
     // ── Schedule Config ──
     function getScheduleConfig() {
-        return _get(KEYS.SCHEDULE) || _defaultSchedule();
+        return cache.scheduleConfig || _defaultSchedule();
     }
 
-    function updateScheduleConfig(config) {
+    async function updateScheduleConfig(partial) {
         const current = getScheduleConfig();
-        const updated = { ...current, ...config };
-        _set(KEYS.SCHEDULE, updated);
+        const updated = {
+            ...current,
+            ...partial,
+            workDays: { ...current.workDays, ...(partial.workDays || {}) },
+            hours: { ...current.hours, ...(partial.hours || {}) }
+        };
+        await tablesDB.updateRow({ databaseId: DB_ID, tableId: TABLE.SCHEDULE, rowId: 'config', data: _toScheduleRowData(updated) });
+        cache.scheduleConfig = updated;
         return updated;
     }
 
-    function addBlock(block) {
+    async function addBlock(block) {
         const config = getScheduleConfig();
-        config.blocks = config.blocks || [];
-        block.id = _generateId();
-        config.blocks.push(block);
-        _set(KEYS.SCHEDULE, config);
+        block = { ...block, id: Security.generateSecureId() };
+        const blocks = [...(config.blocks || []), block];
+        await updateScheduleConfig({ blocks });
         return block;
     }
 
-    function removeBlock(blockId) {
+    async function removeBlock(blockId) {
         const config = getScheduleConfig();
-        config.blocks = (config.blocks || []).filter(b => b.id !== blockId);
-        _set(KEYS.SCHEDULE, config);
+        const blocks = (config.blocks || []).filter(b => b.id !== blockId);
+        await updateScheduleConfig({ blocks });
     }
 
-    function addVacation(vacation) {
+    async function addVacation(vacation) {
         const config = getScheduleConfig();
-        config.vacations = config.vacations || [];
-        vacation.id = _generateId();
-        config.vacations.push(vacation);
-        _set(KEYS.SCHEDULE, config);
+        vacation = { ...vacation, id: Security.generateSecureId() };
+        const vacations = [...(config.vacations || []), vacation];
+        await updateScheduleConfig({ vacations });
         return vacation;
     }
 
-    function removeVacation(vacationId) {
+    async function removeVacation(vacationId) {
         const config = getScheduleConfig();
-        config.vacations = (config.vacations || []).filter(v => v.id !== vacationId);
-        _set(KEYS.SCHEDULE, config);
+        const vacations = (config.vacations || []).filter(v => v.id !== vacationId);
+        await updateScheduleConfig({ vacations });
     }
 
     function isDateBlocked(dateStr) {
         const config = getScheduleConfig();
-        // Check specific blocks
         if ((config.blocks || []).some(b => b.date === dateStr)) return true;
-        // Check vacation ranges
         if ((config.vacations || []).some(v => dateStr >= v.startDate && dateStr <= v.endDate)) return true;
-        // Check work days
-        const dayIndex = new Date(dateStr + 'T12:00:00').getDay(); // 0=Sun, 1=Mon...
+        const dayIndex = new Date(dateStr + 'T12:00:00').getDay();
         const dayMap = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
-        const dayKey = dayMap[dayIndex];
-        if (!config.workDays[dayKey]) return true;
-        return false;
+        return !config.workDays[dayMap[dayIndex]];
     }
 
     function getAvailableSlots(dateStr, serviceDuration = 30) {
@@ -243,7 +468,6 @@ export const Storage = (() => {
         const dayMap = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
         const dayKey = dayMap[dayIndex];
 
-        // Get custom hours for this day or default
         const dayHours = config.customHours && config.customHours[dayKey]
             ? config.customHours[dayKey]
             : { start: config.hours.start, end: config.hours.end };
@@ -258,7 +482,6 @@ export const Storage = (() => {
 
         for (let min = startMin; min + serviceDuration <= endMin; min += slotDuration) {
             const timeStr = _minutesToTime(min);
-            // Check if all needed consecutive slots are free
             let allFree = true;
             for (let s = 0; s < slotsNeeded; s++) {
                 const checkTime = _minutesToTime(min + s * slotDuration);
@@ -274,40 +497,68 @@ export const Storage = (() => {
 
     // ── Gallery ──
     const Gallery = {
-        getAll: () => getAll(KEYS.GALLERY),
-        getByUser: (userId) => query(KEYS.GALLERY, g => g.userId === userId),
-        create: (item) => create(KEYS.GALLERY, item),
-        update: (id, data) => update(KEYS.GALLERY, id, data),
-        remove: (id) => remove(KEYS.GALLERY, id)
+        getAll: () => cache.gallery,
+        getByUser: (userId) => cache.currentUser && cache.currentUser.id === userId
+            ? cache.gallery
+            : [], // admin fetches another client's gallery on demand — see fetchGalleryForClient
+        create: async (item) => {
+            const user = cache.currentUser;
+            const row = await tablesDB.createRow({
+                databaseId: DB_ID, tableId: TABLE.GALLERY, rowId: ID.unique(),
+                data: { userId: item.userId, fileId: item.fileId, caption: item.caption || '', date: item.date },
+                permissions: [
+                    `read("user:${item.userId}")`, `delete("user:${item.userId}")`,
+                    `read("team:${ADMIN_TEAM_ID}")`, `delete("team:${ADMIN_TEAM_ID}")`
+                ]
+            });
+            const normalized = { ..._normalizeRow(row), imageData: _avatarUrl(item.fileId) };
+            if (user && user.id === item.userId) cache.gallery.push(normalized);
+            return normalized;
+        },
+        uploadPhoto: async (file, caption) => {
+            const user = cache.currentUser;
+            if (!user) throw new Error('not logged in');
+            const fileId = ID.unique();
+            await storage.createFile({
+                bucketId: BUCKET_ID, fileId, file,
+                permissions: [`read("user:${user.id}")`, `delete("user:${user.id}")`, `read("team:${ADMIN_TEAM_ID}")`],
+                folder: MEDIA_FOLDER.GALLERY
+            });
+            return Gallery.create({
+                userId: user.id, fileId, caption,
+                date: new Date().toISOString().split('T')[0]
+            });
+        },
+        remove: async (id) => {
+            const item = cache.gallery.find(g => g.id === id);
+            await tablesDB.deleteRow({ databaseId: DB_ID, tableId: TABLE.GALLERY, rowId: id });
+            if (item && item.fileId) {
+                await storage.deleteFile({ bucketId: BUCKET_ID, fileId: item.fileId }).catch(() => {});
+            }
+            cache.gallery = cache.gallery.filter(g => g.id !== id);
+            return true;
+        }
     };
+
+    async function fetchGalleryForClient(userId) {
+        return _fetchGalleryFor(userId);
+    }
 
     // ── Session ──
     const Session = {
-        get: () => _get(KEYS.SESSION),
-        set: (session) => _set(KEYS.SESSION, session),
-        clear: () => localStorage.removeItem(KEYS.SESSION),
-        isLoggedIn: () => !!_get(KEYS.SESSION),
-        getCurrentUser: () => {
-            const session = _get(KEYS.SESSION);
-            if (!session) return null;
-            return Users.getById(session.userId);
-        },
-        isAdmin: () => {
-            const session = _get(KEYS.SESSION);
-            if (!session) return false;
-            const user = Users.getById(session.userId);
-            return user && user.role === 'admin';
-        }
+        isLoggedIn: () => !!cache.currentUser,
+        isAdmin: () => cache.isAdmin,
+        getCurrentUser: () => cache.currentUser,
+        clear: () => { cache = _emptyCache(); }
     };
 
     // ── Settings ──
     const Settings = {
-        get: () => _get(KEYS.SETTINGS) || _defaultSettings(),
-        update: (settings) => {
-            const current = Settings.get();
-            const updated = { ...current, ...settings };
-            _set(KEYS.SETTINGS, updated);
-            return updated;
+        get: () => cache.settings || _defaultSettings(),
+        update: async (settings) => {
+            await tablesDB.updateRow({ databaseId: DB_ID, tableId: TABLE.SETTINGS, rowId: 'config', data: settings });
+            cache.settings = { ...Settings.get(), ...settings };
+            return cache.settings;
         }
     };
 
@@ -323,259 +574,17 @@ export const Storage = (() => {
         return `${h}:${m}`;
     }
 
-    // ── Default Data ──
-    function _defaultSchedule() {
-        return {
-            workDays: { mon: true, tue: true, wed: true, thu: true, fri: true, sat: true, sun: false },
-            hours: { start: '09:00', end: '20:00' },
-            slotDuration: 30,
-            blocks: [],
-            vacations: []
-        };
-    }
-
-    function _defaultSettings() {
-        return {
-            shopName: 'BarberClub',
-            address: 'Calle Principal 42, Madrid',
-            phone: '+34 612 345 678',
-            email: 'info@barberclub.es',
-            instagram: '@barberclub_madrid',
-            description: 'Tu barbería de confianza. Estilo, precisión y actitud.'
-        };
-    }
-
-    // ── Seed Demo Data ──
-    function seedDemoData() {
-        // Only seed if no users exist
-        if (getAll(KEYS.USERS).length > 0) return;
-
-        // Admin user
-        const admin = {
-            id: 'admin001',
-            name: 'Carlos Martínez',
-            email: 'admin@barberia.com',
-            phone: '+34 600 000 001',
-            password: Security.hashPasswordSync('admin123'),
-            role: 'admin',
-            avatar: '',
-            createdAt: '2026-01-15T10:00:00Z'
-        };
-
-        // Demo clients
-        const client1 = {
-            id: 'client001',
-            name: 'Alejandro García',
-            email: 'alex@email.com',
-            phone: '+34 611 111 111',
-            password: Security.hashPasswordSync('123456'),
-            role: 'client',
-            avatar: '',
-            createdAt: '2026-03-10T14:30:00Z'
-        };
-
-        const client2 = {
-            id: 'client002',
-            name: 'Daniel López',
-            email: 'daniel@email.com',
-            phone: '+34 622 222 222',
-            password: Security.hashPasswordSync('123456'),
-            role: 'client',
-            avatar: '',
-            createdAt: '2026-04-05T09:15:00Z'
-        };
-
-        const client3 = {
-            id: 'client003',
-            name: 'Miguel Fernández',
-            email: 'miguel@email.com',
-            phone: '+34 633 333 333',
-            password: Security.hashPasswordSync('123456'),
-            role: 'client',
-            avatar: '',
-            createdAt: '2026-05-20T11:00:00Z'
-        };
-
-        _set(KEYS.USERS, [admin, client1, client2, client3]);
-
-        // Services — two independent catalogs: 'men' (Caballeros) / 'women' (Señoras)
-        const services = [
-            {
-                id: 'srv001',
-                category: 'men',
-                name: 'Corte de cabello',
-                description: 'Corte personalizado adaptado a tu estilo. Incluye lavado y peinado.',
-                duration: 30,
-                price: 12,
-                icon: 'scissors',
-                active: true,
-                createdAt: '2026-01-15T10:00:00Z'
-            },
-            {
-                id: 'srv002',
-                category: 'men',
-                name: 'Arreglo de barba',
-                description: 'Perfilado y arreglo de barba con navaja. Incluye toalla caliente.',
-                duration: 20,
-                price: 8,
-                icon: 'pen-tool',
-                active: true,
-                createdAt: '2026-01-15T10:00:00Z'
-            },
-            {
-                id: 'srv003',
-                category: 'men',
-                name: 'Corte + Barba',
-                description: 'Combo completo: corte de cabello y arreglo de barba. El pack más popular.',
-                duration: 45,
-                price: 18,
-                icon: 'star',
-                active: true,
-                createdAt: '2026-01-15T10:00:00Z'
-            },
-            {
-                id: 'srv004',
-                category: 'women',
-                name: 'Corte de cabello',
-                description: 'Corte personalizado con asesoramiento de imagen. Incluye lavado y peinado.',
-                duration: 45,
-                price: 20,
-                icon: 'scissors',
-                active: true,
-                createdAt: '2026-01-15T10:00:00Z'
-            },
-            {
-                id: 'srv005',
-                category: 'women',
-                name: 'Coloración',
-                description: 'Tinte completo con productos de alta gama. Incluye lavado e hidratación.',
-                duration: 90,
-                price: 45,
-                icon: 'sparkles',
-                active: true,
-                createdAt: '2026-01-15T10:00:00Z'
-            },
-            {
-                id: 'srv006',
-                category: 'women',
-                name: 'Peinado y recogido',
-                description: 'Peinado para eventos especiales. Incluye fijación de larga duración.',
-                duration: 60,
-                price: 30,
-                icon: 'crown',
-                active: true,
-                createdAt: '2026-01-15T10:00:00Z'
-            }
-        ];
-        _set(KEYS.SERVICES, services);
-
-        // Schedule
-        _set(KEYS.SCHEDULE, _defaultSchedule());
-
-        // Settings
-        _set(KEYS.SETTINGS, _defaultSettings());
-
-        // Demo appointments
-        const today = new Date();
-        const formatDate = (d) => d.toISOString().split('T')[0];
-
-        // Past appointments
-        const pastDate1 = new Date(today);
-        pastDate1.setDate(today.getDate() - 14);
-        const pastDate2 = new Date(today);
-        pastDate2.setDate(today.getDate() - 7);
-        const pastDate3 = new Date(today);
-        pastDate3.setDate(today.getDate() - 3);
-
-        // Future appointments
-        const futureDate1 = new Date(today);
-        futureDate1.setDate(today.getDate() + 2);
-        const futureDate2 = new Date(today);
-        futureDate2.setDate(today.getDate() + 5);
-
-        // Ensure future dates are on work days
-        function nextWorkDay(date) {
-            const d = new Date(date);
-            while (d.getDay() === 0) d.setDate(d.getDate() + 1); // Skip Sunday
-            return d;
-        }
-
-        const appointments = [
-            {
-                id: 'appt001',
-                userId: 'client001',
-                serviceId: 'srv001',
-                date: formatDate(pastDate1),
-                time: '10:00',
-                status: 'completed',
-                notes: '',
-                createdAt: pastDate1.toISOString()
-            },
-            {
-                id: 'appt002',
-                userId: 'client002',
-                serviceId: 'srv003',
-                date: formatDate(pastDate2),
-                time: '11:30',
-                status: 'completed',
-                notes: '',
-                createdAt: pastDate2.toISOString()
-            },
-            {
-                id: 'appt003',
-                userId: 'client001',
-                serviceId: 'srv002',
-                date: formatDate(pastDate3),
-                time: '16:00',
-                status: 'completed',
-                notes: '',
-                createdAt: pastDate3.toISOString()
-            },
-            {
-                id: 'appt004',
-                userId: 'client001',
-                serviceId: 'srv003',
-                date: formatDate(nextWorkDay(futureDate1)),
-                time: '10:30',
-                status: 'pending',
-                notes: '',
-                createdAt: new Date().toISOString()
-            },
-            {
-                id: 'appt005',
-                userId: 'client003',
-                serviceId: 'srv001',
-                date: formatDate(nextWorkDay(futureDate2)),
-                time: '15:00',
-                status: 'pending',
-                notes: '',
-                createdAt: new Date().toISOString()
-            },
-            {
-                id: 'appt006',
-                userId: 'client002',
-                serviceId: 'srv002',
-                date: formatDate(nextWorkDay(futureDate1)),
-                time: '12:00',
-                status: 'pending',
-                notes: '',
-                createdAt: new Date().toISOString()
-            }
-        ];
-        _set(KEYS.APPOINTMENTS, appointments);
-
-        console.log('✅ Demo data seeded successfully');
-    }
-
     // ── Public API ──
     return {
-        KEYS,
         Users,
         Appointments,
         Services,
         Gallery,
         Session,
         Settings,
+        restoreSession,
+        hydrate,
+        fetchGalleryForClient,
         getScheduleConfig,
         updateScheduleConfig,
         addBlock,
@@ -584,7 +593,6 @@ export const Storage = (() => {
         removeVacation,
         isDateBlocked,
         getAvailableSlots,
-        seedDemoData,
         _timeToMinutes,
         _minutesToTime
     };

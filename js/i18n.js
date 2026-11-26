@@ -71,6 +71,7 @@ const en = {
     'El formato del teléfono no es válido': 'Invalid phone format',
     'La contraseña debe tener al menos 6 caracteres': 'Password must be at least 6 characters',
     'Ya existe una cuenta registrada con ese email': 'An account with that email already exists',
+    'No se pudo crear la cuenta': 'Could not create the account',
     '¡Bienvenido!': 'Welcome!',
     'Tu cuenta ha sido creada correctamente': 'Your account has been created successfully',
     '¡Hola!': 'Hello!',
@@ -153,6 +154,7 @@ const en = {
     'No disponible': 'Not available',
     'Este horario ya ha sido reservado. Por favor, elige otro.': 'This time slot was just booked. Please choose another one.',
     'Tu cita ha sido creada correctamente': 'Your appointment has been created successfully',
+    'No se pudo crear la reserva': 'Could not create the booking',
     'Ir al inicio': 'Go home',
 
     // ── Profile ──
@@ -184,6 +186,13 @@ const en = {
     'La foto ha sido eliminada': 'The photo has been removed',
     'Error: usuario no encontrado': 'Error: user not found',
     'Añade una descripción (opcional):': 'Add a description (optional):',
+    'Contacta con soporte para cambiar tu email': 'Contact support to change your email',
+    'Contraseña actual': 'Current password',
+    'Solo si vas a cambiarla': 'Only if you are changing it',
+    'Introduce tu contraseña actual para cambiarla': 'Enter your current password to change it',
+    'No se pudieron guardar los cambios': 'Could not save the changes',
+    'No se pudo subir la imagen': 'Could not upload the image',
+    'No se pudo eliminar la cuenta': 'Could not delete the account',
 
     // ── History ──
     'Historial de citas': 'Appointment history',
@@ -279,6 +288,7 @@ const en = {
     'El servicio ha sido actualizado': 'The service has been updated',
     'Creado': 'Created',
     'El nuevo servicio ha sido añadido': 'The new service has been added',
+    'No se pudo guardar el servicio': 'Could not save the service',
     'Activado': 'Activated',
     'Desactivado': 'Deactivated',
     'El servicio ha sido {state}': 'The service has been {state}',

@@ -355,7 +355,7 @@ export const Admin = (() => {
                         return `
                         <div class="client-list-item" onclick="Admin.viewClient('${client.id}')">
                             <div class="avatar">
-                                ${client.avatar && Security.isSafeImageDataUrl(client.avatar) ? `<img src="${client.avatar}" alt="">` : _getInitials(client.name)}
+                                ${client.avatar ? `<img src="${client.avatar}" alt="">` : _getInitials(client.name)}
                             </div>
                             <div class="client-info">
                                 <h4>${Security.escapeHTML(client.name)}</h4>
@@ -456,18 +456,6 @@ export const Admin = (() => {
                         </div>
                     </div>
                 </div>
-
-                <div class="settings-section">
-                    <h3>${t('Datos y mantenimiento')}</h3>
-                    <p class="text-secondary" style="font-size: var(--fs-sm); margin-bottom: var(--space-md);">
-                        ${t('Acciones sobre los datos almacenados en el navegador.')}
-                    </p>
-                    <div style="display: flex; gap: var(--space-md);">
-                        <button class="btn btn-danger btn-sm" onclick="Admin.resetAllData()">
-                            <i data-lucide="trash-2"></i> ${t('Restablecer datos demo')}
-                        </button>
-                    </div>
-                </div>
             </div>
         </div>
         `;
@@ -493,7 +481,7 @@ export const Admin = (() => {
             <div class="modal-body">
                 <div style="display: flex; align-items: center; gap: var(--space-md); margin-bottom: var(--space-lg);">
                     <div class="avatar avatar-lg">
-                        ${user && user.avatar && Security.isSafeImageDataUrl(user.avatar) ? `<img src="${user.avatar}" alt="">` : (user ? _getInitials(user.name) : '?')}
+                        ${user && user.avatar ? `<img src="${user.avatar}" alt="">` : (user ? _getInitials(user.name) : '?')}
                     </div>
                     <div>
                         <h4>${user ? Security.escapeHTML(user.name) : t('Cliente desconocido')}</h4>
@@ -536,27 +524,27 @@ export const Admin = (() => {
         `);
     }
 
-    function adminCancelAppt(apptId) {
-        Storage.Appointments.cancel(apptId);
+    async function adminCancelAppt(apptId) {
+        await Storage.Appointments.cancel(apptId);
         App.closeModal();
         App.showToast('info', t('Cancelada'), t('La cita ha sido cancelada'));
         App.renderPage();
     }
 
-    function adminCompleteAppt(apptId) {
-        Storage.Appointments.complete(apptId);
+    async function adminCompleteAppt(apptId) {
+        await Storage.Appointments.complete(apptId);
         App.closeModal();
         App.showToast('success', t('Completada'), t('La cita ha sido marcada como completada'));
         App.renderPage();
     }
 
-    function viewClient(clientId) {
+    async function viewClient(clientId) {
         const client = Storage.Users.getById(clientId);
         if (!client) return;
 
         const appts = Storage.Appointments.getByUser(clientId)
             .sort((a, b) => b.date.localeCompare(a.date));
-        const gallery = Storage.Gallery.getByUser(clientId);
+        const gallery = await Storage.fetchGalleryForClient(clientId);
 
         const statusLabels = { pending: t('Pendiente'), completed: t('Completada'), cancelled: t('Cancelada') };
         const statusBadges = { pending: 'badge-warning', completed: 'badge-success', cancelled: 'badge-error' };
@@ -571,7 +559,7 @@ export const Admin = (() => {
             <div class="modal-body">
                 <div style="text-align: center; margin-bottom: var(--space-lg);">
                     <div class="avatar avatar-xl" style="margin: 0 auto var(--space-md);">
-                        ${client.avatar && Security.isSafeImageDataUrl(client.avatar) ? `<img src="${client.avatar}" alt="">` : _getInitials(client.name)}
+                        ${client.avatar ? `<img src="${client.avatar}" alt="">` : _getInitials(client.name)}
                     </div>
                     <h3>${Security.escapeHTML(client.name)}</h3>
                     <p class="text-secondary" style="font-size: var(--fs-sm);">${Security.escapeHTML(client.email)}</p>
@@ -602,7 +590,7 @@ export const Admin = (() => {
                 <div class="divider"></div>
                 <h4 style="margin-bottom: var(--space-md);">${t('Galería ({count})', { count: gallery.length })}</h4>
                 <div style="display: flex; gap: var(--space-sm); flex-wrap: wrap;">
-                    ${gallery.filter(g => Security.isSafeImageDataUrl(g.imageData)).map(g => `
+                    ${gallery.map(g => `
                         <img src="${g.imageData}" alt="" style="width: 60px; height: 60px; object-fit: cover; border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
                     `).join('')}
                 </div>
@@ -648,9 +636,9 @@ export const Admin = (() => {
         Admin._searchTimeout = setTimeout(() => App.renderPage(), 200);
     }
 
-    function saveSettings(e) {
+    async function saveSettings(e) {
         e.preventDefault();
-        Storage.Settings.update({
+        await Storage.Settings.update({
             shopName: Security.sanitizeString(document.getElementById('setShopName').value, 100),
             address: Security.sanitizeString(document.getElementById('setAddress').value, 200),
             phone: Security.sanitizeString(document.getElementById('setPhone').value, 30),
@@ -659,39 +647,6 @@ export const Admin = (() => {
             description: Security.sanitizeString(document.getElementById('setDescription').value, 500)
         });
         App.showToast('success', t('Guardado'), t('Los ajustes han sido actualizados'));
-    }
-
-    function resetAllData() {
-        App.showModal(`
-            <div class="modal-header">
-                <h3 class="modal-title">${t('Restablecer datos')}</h3>
-                <button class="modal-close" onclick="App.closeModal()" aria-label="${t('Cerrar')}">
-                    <i data-lucide="x"></i>
-                </button>
-            </div>
-            <div class="modal-body text-center">
-                <div class="confirm-icon confirm-icon-danger" style="margin: 0 auto var(--space-md);">
-                    <i data-lucide="alert-triangle"></i>
-                </div>
-                <h3 style="margin-bottom: var(--space-sm);">${t('¿Restablecer todo?')}</h3>
-                <p class="confirm-message">${t('Se borrarán todos los datos y se cargarán los datos demo. Esta acción no se puede deshacer.')}</p>
-            </div>
-            <div class="modal-footer" style="justify-content: center;">
-                <button class="btn btn-secondary" onclick="App.closeModal()">${t('Cancelar')}</button>
-                <button class="btn btn-danger" onclick="Admin.confirmReset()">
-                    <i data-lucide="refresh-cw"></i> ${t('Restablecer')}
-                </button>
-            </div>
-        `);
-    }
-
-    function confirmReset() {
-        localStorage.clear();
-        Storage.seedDemoData();
-        App.closeModal();
-        App.showToast('success', t('Restablecido'), t('Los datos han sido restablecidos'));
-        Storage.Session.clear();
-        App.navigate('login');
     }
 
     // ── Helpers ──
@@ -840,8 +795,6 @@ export const Admin = (() => {
         changeAgendaMonth,
         searchClients,
         saveSettings,
-        resetAllData,
-        confirmReset,
         initQRCode,
         updateQRCode,
         downloadQRCode,

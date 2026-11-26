@@ -7,6 +7,8 @@ import { Storage } from './storage.js';
 import { Security } from './security.js';
 import { App } from './app.js';
 import { t } from './i18n.js';
+import { account } from './appwrite-client.js';
+import { AppwriteException } from 'appwrite';
 
 export const Auth = (() => {
 
@@ -150,20 +152,7 @@ export const Auth = (() => {
             return;
         }
 
-        const user = Storage.Users.getByEmail(emailInput);
-        if (!user) {
-            App.showToast('error', t('Error'), t('Credenciales incorrectas'));
-            return;
-        }
-
-        const syncHash = Security.hashPasswordSync(passwordInput);
-
-        if (user.password !== syncHash) {
-            App.showToast('error', t('Error'), t('Credenciales incorrectas'));
-            return;
-        }
-
-        _login(user);
+        await _authenticate(emailInput, passwordInput);
     }
 
     // ── Handle Register ──
@@ -194,55 +183,54 @@ export const Auth = (() => {
             return;
         }
 
-        const existing = Storage.Users.getByEmail(email);
-        if (existing) {
-            App.showToast('error', t('Error'), t('Ya existe una cuenta registrada con ese email'));
-            return;
+        try {
+            const newUser = await Storage.Users.create({ name, email, phone, password });
+            App.showToast('success', t('¡Bienvenido!'), t('Tu cuenta ha sido creada correctamente'));
+            _afterLogin(newUser);
+        } catch (err) {
+            if (err instanceof AppwriteException && err.type === 'user_already_exists') {
+                App.showToast('error', t('Error'), t('Ya existe una cuenta registrada con ese email'));
+            } else {
+                App.showToast('error', t('Error'), err.message || t('No se pudo crear la cuenta'));
+            }
         }
-
-        const newUser = Storage.Users.create({
-            name,
-            email,
-            phone,
-            password, // Storage.Users.create automatically hashes it
-            role: 'client', // Strictly client role
-            avatar: ''
-        });
-
-        App.showToast('success', t('¡Bienvenido!'), t('Tu cuenta ha sido creada correctamente'));
-        _login(newUser);
     }
 
     // ── Demo Login ──
-    function demoLogin(role) {
+    async function demoLogin(role) {
         if (role === 'admin') {
-            const admin = Storage.Users.getByEmail('admin@barberia.com');
-            if (admin) _login(admin);
+            await _authenticate('admin@barberia.com', 'Admin12345!');
         } else {
-            const client = Storage.Users.getByEmail('alex@email.com');
-            if (client) _login(client);
+            await _authenticate('alex@email.com', 'Cliente123!');
         }
     }
 
-    // ── Internal Login ──
-    function _login(user) {
-        Storage.Session.set({
-            userId: user.id,
-            role: user.role,
-            loginAt: new Date().toISOString()
-        });
-
-        App.showToast('success', t('¡Hola!'), t('Bienvenido, {name}', { name: Security.escapeHTML(user.name.split(' ')[0]) }));
-
-        if (user.role === 'admin') {
-            App.navigate('dashboard');
-        } else {
-            App.navigate('home');
+    // ── Internal: real Appwrite email/password session ──
+    async function _authenticate(email, password) {
+        try {
+            await account.createEmailPasswordSession({ email, password });
+            await Storage.restoreSession();
+            const user = Storage.Session.getCurrentUser();
+            _afterLogin(user);
+        } catch (err) {
+            if (err instanceof AppwriteException && (err.code === 401 || err.type === 'user_invalid_credentials')) {
+                App.showToast('error', t('Error'), t('Credenciales incorrectas'));
+            } else {
+                App.showToast('error', t('Error'), err.message || t('Credenciales incorrectas'));
+            }
         }
+    }
+
+    function _afterLogin(user) {
+        App.showToast('success', t('¡Hola!'), t('Bienvenido, {name}', { name: Security.escapeHTML(user.name.split(' ')[0]) }));
+        App.navigate(user.role === 'admin' ? 'dashboard' : 'home');
     }
 
     // ── Logout ──
-    function logout() {
+    async function logout() {
+        try {
+            await account.deleteSession({ sessionId: 'current' });
+        } catch { /* session may already be gone server-side; clear local state regardless */ }
         Storage.Session.clear();
         App.showToast('info', t('Sesión cerrada'), t('Has cerrado sesión correctamente'));
         App.navigate('login');

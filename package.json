@@ -16,6 +16,7 @@
     "vite-plugin-pwa": "^0.21.0"
   },
   "dependencies": {
+    "appwrite": "^29.4.0",
     "lucide": "^1.80.0",
     "qrcode": "^1.5.4"
   }

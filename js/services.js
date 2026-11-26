@@ -180,7 +180,7 @@ export const ServicesAdmin = (() => {
     }
 
     // ── Save Service ──
-    function saveService(e, serviceId) {
+    async function saveService(e, serviceId) {
         e.preventDefault();
         const data = {
             category: document.getElementById('svcCategory').value === 'women' ? 'women' : 'men',
@@ -191,21 +191,24 @@ export const ServicesAdmin = (() => {
             icon: Security.sanitizeString(document.getElementById('svcIcon').value, 50)
         };
 
-        if (serviceId) {
-            Storage.Services.update(serviceId, data);
-            App.showToast('success', t('Actualizado'), t('El servicio ha sido actualizado'));
-        } else {
-            Storage.Services.create(data);
-            App.showToast('success', t('Creado'), t('El nuevo servicio ha sido añadido'));
+        try {
+            if (serviceId) {
+                await Storage.Services.update(serviceId, data);
+                App.showToast('success', t('Actualizado'), t('El servicio ha sido actualizado'));
+            } else {
+                await Storage.Services.create(data);
+                App.showToast('success', t('Creado'), t('El nuevo servicio ha sido añadido'));
+            }
+            App.closeModal();
+            App.renderPage();
+        } catch (err) {
+            App.showToast('error', t('Error'), err.message || t('No se pudo guardar el servicio'));
         }
-
-        App.closeModal();
-        App.renderPage();
     }
 
     // ── Toggle Service ──
-    function toggleService(serviceId) {
-        const service = Storage.Services.toggle(serviceId);
+    async function toggleService(serviceId) {
+        const service = await Storage.Services.toggle(serviceId);
         if (service) {
             App.showToast('info', service.active ? t('Activado') : t('Desactivado'),
                 t('El servicio ha sido {state}', { state: service.active ? t('activado') : t('desactivado') }));
@@ -238,8 +241,8 @@ export const ServicesAdmin = (() => {
         `);
     }
 
-    function confirmDelete(serviceId) {
-        Storage.Services.remove(serviceId);
+    async function confirmDelete(serviceId) {
+        await Storage.Services.remove(serviceId);
         App.closeModal();
         App.showToast('info', t('Eliminado'), t('El servicio ha sido eliminado'));
         App.renderPage();
