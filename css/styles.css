@@ -14,6 +14,24 @@
     --border-color: #E8E2D4;
     --border-light: #D9D0BC;
 
+    /* Glossy card system — "jewel box" cards (near-black, gold text) floating
+       on the pearl page background; see the combined card selector below. */
+    --card-bg: linear-gradient(160deg, #221e14, #100d08 72%);
+    --card-bg-hover: #2a2419;
+    --card-border: rgba(243, 218, 152, 0.16);
+    --card-border-hover: rgba(243, 218, 152, 0.3);
+    --card-text-primary: #F5F1E8;
+    --card-text-secondary: #C9BA95;
+    --card-text-muted: #9c8f70;
+    --card-shadow: 0 16px 34px -10px rgba(90, 58, 10, 0.38), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    --card-sheen: linear-gradient(180deg, rgba(255, 255, 255, 0.14), transparent);
+
+    /* Form inputs keep their own light surface even inside a glossy card
+       (the card's dark palette only applies to text/borders that aren't
+       inside an input's own light background) — fixed, not overridden. */
+    --input-text: #18160F;
+    --input-border: #E8E2D4;
+
     /* Accent — Deep Gold (contrast-safe for text/buttons) + bright gold for decoration */
     --accent: #8A6412;
     --accent-light: #B8860B;
@@ -106,6 +124,20 @@
     --border-color: #262629;
     --border-light: #35353A;
 
+    /* Glossy card system — cards sit a shade lighter than the near-black
+       page, so they read as raised, reflective surfaces rather than flat panels. */
+    --card-bg: linear-gradient(160deg, #242024, #0a090b 55%);
+    --card-bg-hover: #2c2830;
+    --card-border: rgba(231, 196, 122, 0.2);
+    --card-border-hover: rgba(231, 196, 122, 0.35);
+    --card-text-primary: #F5F1E8;
+    --card-text-secondary: #B8B2A6;
+    --card-text-muted: #8F8A7D;
+    --card-shadow: 0 18px 38px -10px rgba(60, 35, 5, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    --card-sheen: linear-gradient(180deg, rgba(255, 255, 255, 0.08), transparent);
+    --input-text: #F5F1E8;
+    --input-border: #262629;
+
     /* Accent — Bright gold (reads well on near-black) */
     --accent: #D9B35C;
     --accent-light: #E6C27A;
@@ -136,6 +168,66 @@
     --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.03) inset;
     --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.04) inset;
     --shadow-accent: 0 4px 24px rgba(217, 179, 92, 0.22);
+}
+
+/* ── Glossy card system ──
+   Every "jewel box" surface in the app (stat tiles, service/history cards,
+   client rows, settings panels, modals...) shares one look: a near-black
+   gradient, a warm gold-tinted shadow instead of plain black, and a gold
+   hairline border. Re-pointing --text-primary/--text-secondary/--text-muted
+   locally means every child rule that already reads those variables (there
+   are dozens, across every page) picks up the on-dark-card palette for free,
+   without editing each one. */
+.card, .stat-card, .service-card, .history-card, .client-list-item,
+.settings-section, .service-admin-card, .home-appointment-card,
+.quick-action-card, .contact-info-card, .chart-card, .today-appointment-item,
+.today-appointments, .block-item, .modal, .auth-form,
+.schedule-days, .schedule-blocks, .calendar-container, .time-slots-container,
+.booking-summary, .profile-header, .contact-map, .contact-schedule {
+    background: var(--card-bg);
+    border-color: var(--card-border);
+    box-shadow: var(--card-shadow);
+    --text-primary: var(--card-text-primary);
+    --text-secondary: var(--card-text-secondary);
+    --text-muted: var(--card-text-muted);
+    --border-color: var(--card-border);
+    --bg-card: var(--card-bg);
+    --bg-card-hover: var(--card-bg-hover);
+    color: var(--card-text-primary);
+}
+
+.card-hover:hover, .stat-card:hover, .service-card:hover, .history-card:hover,
+.client-list-item:hover {
+    border-color: var(--card-border-hover);
+}
+
+/* The specular highlight band — only on surfaces confirmed not to rely on
+   overflow for internal scrolling or overflowing children (modals/settings
+   panels are deliberately left out: .modal scrolls its own content). */
+.card, .stat-card, .service-card, .history-card, .client-list-item,
+.service-admin-card, .home-appointment-card, .quick-action-card,
+.contact-info-card, .chart-card, .today-appointment-item,
+.today-appointments, .block-item, .auth-form, .calendar-container,
+.time-slots-container, .booking-summary, .profile-header, .contact-map,
+.contact-schedule {
+    position: relative;
+    overflow: hidden;
+}
+
+.card::before, .stat-card::before, .service-card::before, .history-card::before,
+.client-list-item::before, .service-admin-card::before, .home-appointment-card::before,
+.quick-action-card::before, .contact-info-card::before, .chart-card::before,
+.today-appointment-item::before, .today-appointments::before, .block-item::before,
+.auth-form::before, .calendar-container::before, .time-slots-container::before,
+.booking-summary::before, .profile-header::before, .contact-map::before,
+.contact-schedule::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    top: 0;
+    height: 42%;
+    background: var(--card-sheen);
+    pointer-events: none;
 }
 
 /* ── Reset ── */
