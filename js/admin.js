@@ -145,12 +145,13 @@ export const Admin = (() => {
                 <button class="btn btn-secondary" onclick="App.navigate('agenda')">
                     <i data-lucide="calendar"></i> ${t('Ver agenda completa')}
                 </button>
+                ${Storage.Session.isOwner() ? `
                 <button class="btn btn-secondary" onclick="App.navigate('admin-services')">
                     <i data-lucide="scissors"></i> ${t('Gestionar servicios')}
                 </button>
                 <button class="btn btn-secondary" onclick="App.navigate('schedule')">
                     <i data-lucide="clock"></i> ${t('Configurar horarios')}
-                </button>
+                </button>` : ''}
             </div>
         </div>
         `;
@@ -374,8 +375,181 @@ export const Admin = (() => {
         `;
     }
 
+    // ── Team (owner-only: staff management) ──
+    function renderTeam() {
+        if (!Storage.Session.isOwner()) return '';
+
+        const staff = Storage.Team.getStaff();
+        const owner = Storage.Session.getCurrentUser();
+        const clients = Storage.Users.getClients();
+
+        return `
+        <div class="animate-fade-in-up">
+            <div class="page-header">
+                <h1 class="page-title">${t('Equipo')}</h1>
+                <p class="page-subtitle">${t('Gestiona quién tiene acceso de administrador a tu negocio')}</p>
+            </div>
+
+            <div class="settings-section" style="margin-bottom: var(--space-lg);">
+                <h3 style="margin-bottom: var(--space-sm);">${t('Propietario')}</h3>
+                <div class="client-list-item" style="cursor: default;">
+                    <div class="avatar">
+                        ${owner.avatar ? `<img src="${owner.avatar}" alt="">` : _getInitials(owner.name)}
+                    </div>
+                    <div class="client-info">
+                        <h4>${Security.escapeHTML(owner.name)}</h4>
+                        <p>${Security.escapeHTML(owner.email)}</p>
+                    </div>
+                    <span class="badge badge-accent">${t('Propietario')}</span>
+                </div>
+            </div>
+
+            <div class="settings-section" style="margin-bottom: var(--space-lg);">
+                <h3 style="margin-bottom: var(--space-sm);">${t('Administradores')}</h3>
+                <p class="text-secondary" style="font-size: var(--fs-sm); margin-bottom: var(--space-md);">
+                    ${t('Pueden gestionar la agenda y los clientes, pero no los servicios, horarios ni ajustes del negocio.')}
+                </p>
+                ${staff.length === 0
+                    ? `<p class="text-secondary" style="font-size: var(--fs-sm);">${t('Todavía no has añadido ningún administrador')}</p>`
+                    : staff.map(member => `
+                        <div class="client-list-item" style="cursor: default;">
+                            <div class="avatar">
+                                ${member.avatar ? `<img src="${member.avatar}" alt="">` : _getInitials(member.name)}
+                            </div>
+                            <div class="client-info">
+                                <h4>${Security.escapeHTML(member.name)}</h4>
+                                <p>${Security.escapeHTML(member.email)}</p>
+                            </div>
+                            <button class="btn btn-secondary btn-sm" onclick="Admin.confirmDemoteStaff('${member.id}')">
+                                ${t('Quitar acceso')}
+                            </button>
+                        </div>
+                    `).join('')
+                }
+            </div>
+
+            <div class="settings-section">
+                <h3 style="margin-bottom: var(--space-sm);">${t('Añadir administrador')}</h3>
+                <p class="text-secondary" style="font-size: var(--fs-sm); margin-bottom: var(--space-md);">
+                    ${t('Para dar acceso a alguien, primero debe registrarse como cliente normal. Luego, búscalo aquí y promociónalo.')}
+                </p>
+                <div class="form-input-icon" style="margin-bottom: var(--space-md);">
+                    <input type="text" class="form-input" id="teamClientSearch" placeholder="${t('Buscar cliente por nombre o email...')}"
+                        oninput="Admin.searchTeamCandidates(this.value)">
+                    <i data-lucide="search"></i>
+                </div>
+                <div id="teamCandidatesList">
+                    ${_renderTeamCandidates('', clients)}
+                </div>
+            </div>
+        </div>
+        `;
+    }
+
+    function _renderTeamCandidates(query, clients) {
+        const q = query.trim().toLowerCase();
+        if (!q) return `<p class="text-secondary" style="font-size: var(--fs-sm);">${t('Escribe para buscar')}</p>`;
+
+        const matches = clients.filter(c =>
+            c.role === 'client' &&
+            (c.name.toLowerCase().includes(q) || c.email.toLowerCase().includes(q))
+        ).slice(0, 10);
+
+        if (matches.length === 0) {
+            return `<p class="text-secondary" style="font-size: var(--fs-sm);">${t('No se encontraron clientes con ese nombre o email')}</p>`;
+        }
+
+        return matches.map(c => `
+            <div class="client-list-item" style="cursor: default;">
+                <div class="avatar">
+                    ${c.avatar ? `<img src="${c.avatar}" alt="">` : _getInitials(c.name)}
+                </div>
+                <div class="client-info">
+                    <h4>${Security.escapeHTML(c.name)}</h4>
+                    <p>${Security.escapeHTML(c.email)}</p>
+                </div>
+                <button class="btn btn-primary btn-sm" onclick="Admin.confirmPromoteStaff('${c.id}')">
+                    ${t('Dar acceso')}
+                </button>
+            </div>
+        `).join('');
+    }
+
+    function searchTeamCandidates(query) {
+        const clients = Storage.Users.getClients();
+        const list = document.getElementById('teamCandidatesList');
+        if (list) list.innerHTML = _renderTeamCandidates(query, clients);
+        renderIcons();
+    }
+
+    function confirmPromoteStaff(userId) {
+        const user = Storage.Users.getById(userId);
+        if (!user) return;
+        App.showModal(`
+            <div class="modal-header">
+                <h3 class="modal-title">${t('Dar acceso de administrador')}</h3>
+                <button class="modal-close" onclick="App.closeModal()" aria-label="${t('Cerrar')}">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <div class="modal-body text-center">
+                <p class="confirm-message">${t('{name} podrá gestionar la agenda y los clientes. No podrá cambiar servicios, horarios ni ajustes.', { name: Security.escapeHTML(user.name) })}</p>
+            </div>
+            <div class="modal-footer" style="justify-content: center;">
+                <button class="btn btn-secondary" onclick="App.closeModal()">${t('Cancelar')}</button>
+                <button class="btn btn-primary" onclick="Admin.doPromoteStaff('${userId}')">${t('Confirmar')}</button>
+            </div>
+        `);
+    }
+
+    async function doPromoteStaff(userId) {
+        try {
+            await Storage.Team.promote(userId);
+            App.closeModal();
+            App.showToast('success', t('Acceso concedido'), t('Ahora tiene acceso de administrador'));
+            App.renderPage();
+        } catch (err) {
+            App.showToast('error', t('Error'), err.message || t('No se pudo conceder el acceso'));
+        }
+    }
+
+    function confirmDemoteStaff(userId) {
+        const user = Storage.Users.getById(userId);
+        if (!user) return;
+        App.showModal(`
+            <div class="modal-header">
+                <h3 class="modal-title">${t('Quitar acceso de administrador')}</h3>
+                <button class="modal-close" onclick="App.closeModal()" aria-label="${t('Cerrar')}">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <div class="modal-body text-center">
+                <p class="confirm-message">${t('{name} volverá a ser un cliente normal y perderá el acceso al panel.', { name: Security.escapeHTML(user.name) })}</p>
+            </div>
+            <div class="modal-footer" style="justify-content: center;">
+                <button class="btn btn-secondary" onclick="App.closeModal()">${t('Cancelar')}</button>
+                <button class="btn btn-danger" onclick="Admin.doDemoteStaff('${userId}')">${t('Quitar acceso')}</button>
+            </div>
+        `);
+    }
+
+    async function doDemoteStaff(userId) {
+        try {
+            await Storage.Team.demote(userId);
+            App.closeModal();
+            App.showToast('info', t('Acceso retirado'), t('Ahora es un cliente normal'));
+            App.renderPage();
+        } catch (err) {
+            App.showToast('error', t('Error'), err.message || t('No se pudo quitar el acceso'));
+        }
+    }
+
     // ── Settings ──
     function renderSettings() {
+        // The route guard in app.js already keeps non-owners off this page;
+        // this is a defensive fallback in case it's reached another way.
+        if (!Storage.Session.isOwner()) return '';
+
         const settings = Storage.Settings.get();
         setTimeout(() => Admin.initQRCode(), 50);
 
@@ -783,6 +957,12 @@ export const Admin = (() => {
         renderDashboard,
         renderAgenda,
         renderClients,
+        renderTeam,
+        searchTeamCandidates,
+        confirmPromoteStaff,
+        doPromoteStaff,
+        confirmDemoteStaff,
+        doDemoteStaff,
         renderSettings,
         viewAppointment,
         adminCancelAppt,

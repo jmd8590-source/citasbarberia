@@ -13,8 +13,8 @@
    ============================================= */
 
 import {
-    account, tablesDB, storage, ID, Query,
-    DB_ID, BUCKET_ID, TABLE, MEDIA_FOLDER
+    account, tablesDB, storage, teams, functions, ID, Query,
+    DB_ID, BUCKET_ID, TABLE, MEDIA_FOLDER, OWNER_TEAM_ID, MANAGE_STAFF_FUNCTION_ID
 } from './appwrite-client.js';
 import { Security } from './security.js';
 
@@ -25,6 +25,7 @@ export const Storage = (() => {
         return {
             currentUser: null,
             isAdmin: false,
+            isOwner: false,
             clients: [],
             appointments: [],
             slots: [],
@@ -145,7 +146,20 @@ export const Storage = (() => {
             avatar: _avatarUrl(profile.avatarFileId)
         };
         cache.isAdmin = profile.role === 'admin';
+        // Owner status is never read from the profile row — only real Appwrite
+        // team membership grants it, so a user can't escalate themselves by
+        // editing their own profile row (which they do have update access to).
+        cache.isOwner = cache.isAdmin ? await _isOwnerTeamMember() : false;
         await hydrate();
+    }
+
+    async function _isOwnerTeamMember() {
+        try {
+            const res = await teams.list();
+            return res.teams.some(t => t.$id === OWNER_TEAM_ID);
+        } catch {
+            return false;
+        }
     }
 
     async function hydrate() {
@@ -164,15 +178,19 @@ export const Storage = (() => {
         cache.settings = settingsRow ? _normalizeRow(settingsRow) : _defaultSettings();
 
         if (cache.isAdmin) {
-            const [apptsRes, clientsRes] = await Promise.all([
+            const [apptsRes, profilesRes] = await Promise.all([
                 tablesDB.listRows({ databaseId: DB_ID, tableId: TABLE.APPOINTMENTS, queries: [Query.limit(1000)] }),
-                tablesDB.listRows({ databaseId: DB_ID, tableId: TABLE.PROFILES, queries: [Query.equal('role', 'client'), Query.limit(500)] })
+                // Fetches both clients and staff/admin profiles — Admin.renderClients()
+                // filters to role==='client', Team.getStaff() filters to role==='admin'.
+                tablesDB.listRows({ databaseId: DB_ID, tableId: TABLE.PROFILES, queries: [Query.limit(500)] })
             ]);
             cache.appointments = apptsRes.rows.map(_normalizeRow);
-            cache.clients = clientsRes.rows.map(r => {
-                const p = _normalizeRow(r);
-                return { ...p, avatar: _avatarUrl(p.avatarFileId) };
-            });
+            cache.clients = profilesRes.rows
+                .filter(r => r.$id !== user.id)
+                .map(r => {
+                    const p = _normalizeRow(r);
+                    return { ...p, avatar: _avatarUrl(p.avatarFileId) };
+                });
             cache.gallery = [];
         } else {
             const apptsRes = await tablesDB.listRows({
@@ -206,7 +224,7 @@ export const Storage = (() => {
             if (cache.currentUser && cache.currentUser.email.toLowerCase() === q) return cache.currentUser;
             return cache.clients.find(c => c.email.toLowerCase() === q) || null;
         },
-        getClients: () => cache.clients,
+        getClients: () => cache.clients.filter(c => c.role === 'client'),
         // Full registration: Appwrite Auth account + profile row + session.
         create: async ({ name, email, phone, password }) => {
             const cleanName = Security.sanitizeString(name, 100);
@@ -547,9 +565,46 @@ export const Storage = (() => {
     const Session = {
         isLoggedIn: () => !!cache.currentUser,
         isAdmin: () => cache.isAdmin,
+        isOwner: () => cache.isOwner,
         getCurrentUser: () => cache.currentUser,
         clear: () => { cache = _emptyCache(); }
     };
+
+    // ── Team (owner-only staff management) ──
+    // Promoting/demoting staff needs real Appwrite team membership, which a
+    // client session can never grant to itself or anyone else — only a
+    // server-side context can. The manage-staff Function does that: its
+    // execute permission is restricted to team:owners, so Appwrite rejects
+    // non-owners before this code's request even reaches it.
+    const Team = {
+        getStaff: () => cache.clients.filter(c => c.role === 'admin'),
+        promote: async (userId) => {
+            const result = await _callManageStaff('promote', userId);
+            const idx = cache.clients.findIndex(c => c.id === userId);
+            if (idx !== -1) cache.clients[idx] = { ...cache.clients[idx], role: 'admin' };
+            return result;
+        },
+        demote: async (userId) => {
+            const result = await _callManageStaff('demote', userId);
+            const idx = cache.clients.findIndex(c => c.id === userId);
+            if (idx !== -1) cache.clients[idx] = { ...cache.clients[idx], role: 'client' };
+            return result;
+        }
+    };
+
+    async function _callManageStaff(action, userId) {
+        const execution = await functions.createExecution({
+            functionId: MANAGE_STAFF_FUNCTION_ID,
+            body: JSON.stringify({ action, userId }),
+            method: 'POST'
+        });
+        let body;
+        try { body = JSON.parse(execution.responseBody || '{}'); } catch { body = {}; }
+        if (execution.responseStatusCode >= 400 || body.error) {
+            throw new Error(body.error || 'manage_staff_failed');
+        }
+        return body;
+    }
 
     // ── Settings ──
     const Settings = {
@@ -580,6 +635,7 @@ export const Storage = (() => {
         Services,
         Gallery,
         Session,
+        Team,
         Settings,
         restoreSession,
         hydrate,

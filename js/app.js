@@ -23,7 +23,9 @@ export const App = (() => {
 
     // ── Route Definitions ──
     const clientRoutes = ['home', 'booking', 'profile', 'history', 'contact'];
-    const adminRoutes = ['dashboard', 'agenda', 'clients', 'admin-services', 'schedule', 'settings'];
+    const adminRoutes = ['dashboard', 'agenda', 'clients', 'admin-services', 'schedule', 'settings', 'team'];
+    // Business-critical routes: full control (owner), not day-to-day staff.
+    const ownerOnlyRoutes = ['admin-services', 'schedule', 'settings', 'team'];
     const publicRoutes = ['login', 'register'];
     // Viewable whether logged in or not, rendered without the app shell (privacy/terms links from the footer and from within the app)
     const standaloneRoutes = ['privacy', 'terms'];
@@ -40,14 +42,20 @@ export const App = (() => {
     }
 
     function _adminNav() {
-        return [
+        const items = [
             { route: 'dashboard', label: t('Dashboard'), icon: 'layout-dashboard' },
             { route: 'agenda', label: t('Agenda'), icon: 'calendar' },
-            { route: 'clients', label: t('Clientes'), icon: 'users' },
-            { route: 'admin-services', label: t('Servicios'), icon: 'scissors' },
-            { route: 'schedule', label: t('Horarios'), icon: 'clock' },
-            { route: 'settings', label: t('Ajustes'), icon: 'settings' }
+            { route: 'clients', label: t('Clientes'), icon: 'users' }
         ];
+        if (Storage.Session.isOwner()) {
+            items.push(
+                { route: 'admin-services', label: t('Servicios'), icon: 'scissors' },
+                { route: 'schedule', label: t('Horarios'), icon: 'clock' },
+                { route: 'team', label: t('Equipo'), icon: 'shield' },
+                { route: 'settings', label: t('Ajustes'), icon: 'settings' }
+            );
+        }
+        return items;
     }
 
     // ── Initialize ──
@@ -98,6 +106,13 @@ export const App = (() => {
         // Role guard
         if (isLoggedIn && !isAdmin && adminRoutes.includes(route)) {
             navigate('home');
+            return;
+        }
+
+        // Owner guard: staff can access the shared admin area, but not
+        // business-critical pages (services, schedule, settings, team).
+        if (isLoggedIn && isAdmin && !Storage.Session.isOwner() && ownerOnlyRoutes.includes(route)) {
+            navigate('dashboard');
             return;
         }
 
@@ -168,7 +183,7 @@ export const App = (() => {
                         </div>
                         <div class="sidebar-user-info">
                             <div class="sidebar-user-name">${Security.escapeHTML(user.name)}</div>
-                            <div class="sidebar-user-role">${isAdmin ? t('Administrador') : t('Cliente')}</div>
+                            <div class="sidebar-user-role">${isAdmin ? (Storage.Session.isOwner() ? t('Propietario') : t('Administrador')) : t('Cliente')}</div>
                         </div>
                         <i data-lucide="log-out" style="width:18px; height:18px; color: var(--text-muted); cursor: pointer;" onclick="event.stopPropagation(); Auth.logout();" role="button" aria-label="${t('Salir')}" tabindex="0"></i>
                     </div>
@@ -264,6 +279,7 @@ export const App = (() => {
             case 'clients': return Admin.renderClients();
             case 'admin-services': return ServicesAdmin.render();
             case 'schedule': return Schedule.render();
+            case 'team': return Admin.renderTeam();
             case 'settings': return Admin.renderSettings();
             default: return _renderHome();
         }
@@ -274,7 +290,7 @@ export const App = (() => {
             home: t('Inicio'), booking: t('Reservar cita'), profile: t('Mi perfil'),
             history: t('Historial'), contact: t('Contacto'),
             dashboard: t('Dashboard'), agenda: t('Agenda'), clients: t('Clientes'),
-            'admin-services': t('Servicios'), schedule: t('Horarios'), settings: t('Ajustes')
+            'admin-services': t('Servicios'), schedule: t('Horarios'), team: t('Equipo'), settings: t('Ajustes')
         };
         return titles[currentRoute] || 'BarberClub';
     }

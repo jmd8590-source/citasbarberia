@@ -18,6 +18,10 @@ export const Schedule = (() => {
 
     // ── Main Render ──
     function render() {
+        // The route guard in app.js already keeps non-owners off this page;
+        // this is a defensive fallback in case it's reached another way.
+        if (!Storage.Session.isOwner()) return '';
+
         const config = Storage.getScheduleConfig();
         const dayNames = _dayNames();
 

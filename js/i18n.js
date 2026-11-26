@@ -19,9 +19,11 @@ const en = {
     'Clientes': 'Clients',
     'Servicios': 'Services',
     'Horarios': 'Schedule',
+    'Equipo': 'Team',
     'Ajustes': 'Settings',
     'Administración': 'Administration',
     'Menú': 'Menu',
+    'Propietario': 'Owner',
     'Administrador': 'Administrator',
     'Cliente': 'Client',
     'Salir': 'Log out',
@@ -405,7 +407,34 @@ const en = {
         'Your profile, appointments and gallery will be permanently deleted. This action cannot be undone.',
     'Sí, eliminar mi cuenta': 'Yes, delete my account',
     'Cuenta eliminada': 'Account deleted',
-    'Tu cuenta y tus datos han sido eliminados': 'Your account and data have been deleted'
+    'Tu cuenta y tus datos han sido eliminados': 'Your account and data have been deleted',
+
+    // ── Team management (owner only) ──
+    'Gestiona quién tiene acceso de administrador a tu negocio': 'Manage who has administrator access to your business',
+    'Administradores': 'Administrators',
+    'Pueden gestionar la agenda y los clientes, pero no los servicios, horarios ni ajustes del negocio.':
+        'They can manage the calendar and clients, but not services, schedule or business settings.',
+    'Todavía no has añadido ningún administrador': "You haven't added any administrators yet",
+    'Quitar acceso': 'Remove access',
+    'Añadir administrador': 'Add administrator',
+    'Para dar acceso a alguien, primero debe registrarse como cliente normal. Luego, búscalo aquí y promociónalo.':
+        'To give someone access, they must first register as a regular client. Then search for them here and promote them.',
+    'Buscar cliente por nombre o email...': 'Search for a client by name or email...',
+    'Escribe para buscar': 'Type to search',
+    'No se encontraron clientes con ese nombre o email': 'No clients found with that name or email',
+    'Dar acceso': 'Grant access',
+    'Dar acceso de administrador': 'Grant administrator access',
+    '{name} podrá gestionar la agenda y los clientes. No podrá cambiar servicios, horarios ni ajustes.':
+        '{name} will be able to manage the calendar and clients. They won’t be able to change services, schedule or settings.',
+    'Acceso concedido': 'Access granted',
+    'Ahora tiene acceso de administrador': 'They now have administrator access',
+    'No se pudo conceder el acceso': 'Could not grant access',
+    'Quitar acceso de administrador': 'Remove administrator access',
+    '{name} volverá a ser un cliente normal y perderá el acceso al panel.':
+        '{name} will become a regular client again and lose access to the admin panel.',
+    'Acceso retirado': 'Access removed',
+    'Ahora es un cliente normal': 'They are now a regular client',
+    'No se pudo quitar el acceso': 'Could not remove access'
 };
 
 function getLang() {
